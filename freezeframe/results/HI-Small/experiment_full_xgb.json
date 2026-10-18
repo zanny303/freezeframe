@@ -1,0 +1,1853 @@
+{
+  "dataset": "HI-Small",
+  "tier": "full",
+  "model": "xgb",
+  "split_fractions": [
+    0.6,
+    0.2,
+    0.2
+  ],
+  "members": 5,
+  "together_overall": {
+    "n": 1015669,
+    "positives": 1797,
+    "f1": 0.630426851514046,
+    "precision": 0.9152542372881356,
+    "recall": 0.48080133555926546,
+    "tp": 864,
+    "fp": 80,
+    "fn": 933,
+    "recall_at_review_budget": 0.6683361157484696,
+    "laundered_usd": 732344204.4489855,
+    "laundered_usd_stopped": 730217205.4429402,
+    "holds": 18586,
+    "freezes": 623,
+    "freeze_precision": 0.9807383627608347,
+    "legit_payments_stopped": 17962,
+    "per_pattern_recall": {
+      "BIPARTITE": {
+        "positives": 74,
+        "recall": 0.5405405405405406
+      },
+      "CYCLE": {
+        "positives": 109,
+        "recall": 0.5045871559633027
+      },
+      "FAN-IN": {
+        "positives": 137,
+        "recall": 0.6934306569343066
+      },
+      "FAN-OUT": {
+        "positives": 140,
+        "recall": 0.7428571428571429
+      },
+      "GATHER-SCATTER": {
+        "positives": 401,
+        "recall": 0.6982543640897756
+      },
+      "RANDOM": {
+        "positives": 86,
+        "recall": 0.6162790697674418
+      },
+      "SCATTER-GATHER": {
+        "positives": 252,
+        "recall": 0.6666666666666666
+      },
+      "STACK": {
+        "positives": 140,
+        "recall": 0.4857142857142857
+      },
+      "(unpatterned)": {
+        "positives": 458,
+        "recall": 0.002183406113537118
+      }
+    }
+  },
+  "seeds": {
+    "0": {
+      "members": [
+        {
+          "member": 0,
+          "banks": 6160,
+          "view_rows": 1818143,
+          "owned_test_rows": 251543,
+          "alone": {
+            "n": 251543,
+            "positives": 359,
+            "f1": 0.36053130929791277,
+            "precision": 0.5654761904761905,
+            "recall": 0.2646239554317549,
+            "tp": 95,
+            "fp": 73,
+            "fn": 264,
+            "recall_at_review_budget": 0.4011142061281337,
+            "laundered_usd": 112363284.6965238,
+            "laundered_usd_stopped": 111322355.9397286,
+            "holds": 8419,
+            "freezes": 37,
+            "freeze_precision": 0.972972972972973,
+            "legit_payments_stopped": 8312,
+            "per_pattern_recall": {
+              "BIPARTITE": {
+                "positives": 10,
+                "recall": 0.5
+              },
+              "CYCLE": {
+                "positives": 19,
+                "recall": 0.42105263157894735
+              },
+              "FAN-IN": {
+                "positives": 25,
+                "recall": 0.56
+              },
+              "FAN-OUT": {
+                "positives": 5,
+                "recall": 0.8
+              },
+              "GATHER-SCATTER": {
+                "positives": 44,
+                "recall": 0.5909090909090909
+              },
+              "RANDOM": {
+                "positives": 17,
+                "recall": 0.6470588235294118
+              },
+              "SCATTER-GATHER": {
+                "positives": 24,
+                "recall": 0.7083333333333334
+              },
+              "STACK": {
+                "positives": 24,
+                "recall": 0.375
+              },
+              "(unpatterned)": {
+                "positives": 191,
+                "recall": 0.005235602094240838
+              }
+            }
+          },
+          "together": {
+            "n": 251543,
+            "positives": 359,
+            "f1": 0.4194915254237288,
+            "precision": 0.8761061946902655,
+            "recall": 0.2757660167130919,
+            "tp": 99,
+            "fp": 14,
+            "fn": 260,
+            "recall_at_review_budget": 0.4178272980501393,
+            "laundered_usd": 112363284.6965238,
+            "laundered_usd_stopped": 111639157.71211149,
+            "holds": 9718,
+            "freezes": 74,
+            "freeze_precision": 0.9594594594594594,
+            "legit_payments_stopped": 9628,
+            "per_pattern_recall": {
+              "BIPARTITE": {
+                "positives": 10,
+                "recall": 0.6
+              },
+              "CYCLE": {
+                "positives": 19,
+                "recall": 0.47368421052631576
+              },
+              "FAN-IN": {
+                "positives": 25,
+                "recall": 0.44
+              },
+              "FAN-OUT": {
+                "positives": 5,
+                "recall": 0.8
+              },
+              "GATHER-SCATTER": {
+                "positives": 44,
+                "recall": 0.7045454545454546
+              },
+              "RANDOM": {
+                "positives": 17,
+                "recall": 0.5882352941176471
+              },
+              "SCATTER-GATHER": {
+                "positives": 24,
+                "recall": 0.75
+              },
+              "STACK": {
+                "positives": 24,
+                "recall": 0.4166666666666667
+              },
+              "(unpatterned)": {
+                "positives": 191,
+                "recall": 0.0
+              }
+            }
+          }
+        },
+        {
+          "member": 1,
+          "banks": 6023,
+          "view_rows": 1658373,
+          "owned_test_rows": 188741,
+          "alone": {
+            "n": 188741,
+            "positives": 448,
+            "f1": 0.593006993006993,
+            "precision": 0.7940074906367042,
+            "recall": 0.4732142857142857,
+            "tp": 212,
+            "fp": 55,
+            "fn": 236,
+            "recall_at_review_budget": 0.6584821428571429,
+            "laundered_usd": 169395934.00594962,
+            "laundered_usd_stopped": 169139069.83173022,
+            "holds": 2934,
+            "freezes": 114,
+            "freeze_precision": 0.9824561403508771,
+            "legit_payments_stopped": 2704,
+            "per_pattern_recall": {
+              "BIPARTITE": {
+                "positives": 18,
+                "recall": 0.3888888888888889
+              },
+              "CYCLE": {
+                "positives": 34,
+                "recall": 0.5588235294117647
+              },
+              "FAN-IN": {
+                "positives": 36,
+                "recall": 0.5833333333333334
+              },
+              "FAN-OUT": {
+                "positives": 49,
+                "recall": 0.6326530612244898
+              },
+              "GATHER-SCATTER": {
+                "positives": 106,
+                "recall": 0.5283018867924528
+              },
+              "RANDOM": {
+                "positives": 18,
+                "recall": 0.6111111111111112
+              },
+              "SCATTER-GATHER": {
+                "positives": 83,
+                "recall": 0.5662650602409639
+              },
+              "STACK": {
+                "positives": 33,
+                "recall": 0.6060606060606061
+              },
+              "(unpatterned)": {
+                "positives": 71,
+                "recall": 0.0
+              }
+            }
+          },
+          "together": {
+            "n": 188741,
+            "positives": 448,
+            "f1": 0.6656934306569343,
+            "precision": 0.9620253164556962,
+            "recall": 0.5089285714285714,
+            "tp": 228,
+            "fp": 9,
+            "fn": 220,
+            "recall_at_review_budget": 0.7433035714285714,
+            "laundered_usd": 169395934.00594962,
+            "laundered_usd_stopped": 168986525.1093495,
+            "holds": 2193,
+            "freezes": 143,
+            "freeze_precision": 0.993006993006993,
+            "legit_payments_stopped": 1989,
+            "per_pattern_recall": {
+              "BIPARTITE": {
+                "positives": 18,
+                "recall": 0.4444444444444444
+              },
+              "CYCLE": {
+                "positives": 34,
+                "recall": 0.47058823529411764
+              },
+              "FAN-IN": {
+                "positives": 36,
+                "recall": 0.6666666666666666
+              },
+              "FAN-OUT": {
+                "positives": 49,
+                "recall": 0.6122448979591837
+              },
+              "GATHER-SCATTER": {
+                "positives": 106,
+                "recall": 0.6132075471698113
+              },
+              "RANDOM": {
+                "positives": 18,
+                "recall": 0.6111111111111112
+              },
+              "SCATTER-GATHER": {
+                "positives": 83,
+                "recall": 0.6746987951807228
+              },
+              "STACK": {
+                "positives": 33,
+                "recall": 0.5454545454545454
+              },
+              "(unpatterned)": {
+                "positives": 71,
+                "recall": 0.0
+              }
+            }
+          }
+        },
+        {
+          "member": 2,
+          "banks": 6218,
+          "view_rows": 1723758,
+          "owned_test_rows": 198457,
+          "alone": {
+            "n": 198457,
+            "positives": 313,
+            "f1": 0.6045627376425856,
+            "precision": 0.7464788732394366,
+            "recall": 0.5079872204472844,
+            "tp": 159,
+            "fp": 54,
+            "fn": 154,
+            "recall_at_review_budget": 0.65814696485623,
+            "laundered_usd": 139402568.67184263,
+            "laundered_usd_stopped": 139096162.7175984,
+            "holds": 2176,
+            "freezes": 45,
+            "freeze_precision": 1.0,
+            "legit_payments_stopped": 1991,
+            "per_pattern_recall": {
+              "BIPARTITE": {
+                "positives": 19,
+                "recall": 0.47368421052631576
+              },
+              "CYCLE": {
+                "positives": 22,
+                "recall": 0.36363636363636365
+              },
+              "FAN-IN": {
+                "positives": 32,
+                "recall": 0.5625
+              },
+              "FAN-OUT": {
+                "positives": 25,
+                "recall": 0.88
+              },
+              "GATHER-SCATTER": {
+                "positives": 59,
+                "recall": 0.6101694915254238
+              },
+              "RANDOM": {
+                "positives": 17,
+                "recall": 0.6470588235294118
+              },
+              "SCATTER-GATHER": {
+                "positives": 56,
+                "recall": 0.6785714285714286
+              },
+              "STACK": {
+                "positives": 32,
+                "recall": 0.5
+              },
+              "(unpatterned)": {
+                "positives": 51,
+                "recall": 0.0196078431372549
+              }
+            }
+          },
+          "together": {
+            "n": 198457,
+            "positives": 313,
+            "f1": 0.6653306613226452,
+            "precision": 0.8924731182795699,
+            "recall": 0.5303514376996805,
+            "tp": 166,
+            "fp": 20,
+            "fn": 147,
+            "recall_at_review_budget": 0.7188498402555911,
+            "laundered_usd": 139402568.67184263,
+            "laundered_usd_stopped": 139030493.08958793,
+            "holds": 2288,
+            "freezes": 123,
+            "freeze_precision": 0.983739837398374,
+            "legit_payments_stopped": 2175,
+            "per_pattern_recall": {
+              "BIPARTITE": {
+                "positives": 19,
+                "recall": 0.47368421052631576
+              },
+              "CYCLE": {
+                "positives": 22,
+                "recall": 0.5
+              },
+              "FAN-IN": {
+                "positives": 32,
+                "recall": 0.75
+              },
+              "FAN-OUT": {
+                "positives": 25,
+                "recall": 0.88
+              },
+              "GATHER-SCATTER": {
+                "positives": 59,
+                "recall": 0.6610169491525424
+              },
+              "RANDOM": {
+                "positives": 17,
+                "recall": 0.5294117647058824
+              },
+              "SCATTER-GATHER": {
+                "positives": 56,
+                "recall": 0.6964285714285714
+              },
+              "STACK": {
+                "positives": 32,
+                "recall": 0.40625
+              },
+              "(unpatterned)": {
+                "positives": 51,
+                "recall": 0.0
+              }
+            }
+          }
+        },
+        {
+          "member": 3,
+          "banks": 5998,
+          "view_rows": 1672562,
+          "owned_test_rows": 183917,
+          "alone": {
+            "n": 183917,
+            "positives": 289,
+            "f1": 0.6208251473477406,
+            "precision": 0.7181818181818181,
+            "recall": 0.5467128027681661,
+            "tp": 158,
+            "fp": 62,
+            "fn": 131,
+            "recall_at_review_budget": 0.6470588235294118,
+            "laundered_usd": 77538526.72948311,
+            "laundered_usd_stopped": 77346376.18810804,
+            "holds": 2384,
+            "freezes": 111,
+            "freeze_precision": 0.9279279279279279,
+            "legit_payments_stopped": 2280,
+            "per_pattern_recall": {
+              "BIPARTITE": {
+                "positives": 11,
+                "recall": 0.6363636363636364
+              },
+              "CYCLE": {
+                "positives": 16,
+                "recall": 0.625
+              },
+              "FAN-IN": {
+                "positives": 29,
+                "recall": 0.5172413793103449
+              },
+              "FAN-OUT": {
+                "positives": 11,
+                "recall": 0.7272727272727273
+              },
+              "GATHER-SCATTER": {
+                "positives": 80,
+                "recall": 0.7875
+              },
+              "RANDOM": {
+                "positives": 17,
+                "recall": 0.6470588235294118
+              },
+              "SCATTER-GATHER": {
+                "positives": 43,
+                "recall": 0.6046511627906976
+              },
+              "STACK": {
+                "positives": 28,
+                "recall": 0.5714285714285714
+              },
+              "(unpatterned)": {
+                "positives": 54,
+                "recall": 0.037037037037037035
+              }
+            }
+          },
+          "together": {
+            "n": 183917,
+            "positives": 289,
+            "f1": 0.6465517241379309,
+            "precision": 0.8571428571428571,
+            "recall": 0.5190311418685121,
+            "tp": 150,
+            "fp": 25,
+            "fn": 139,
+            "recall_at_review_budget": 0.7162629757785467,
+            "laundered_usd": 77538526.72948311,
+            "laundered_usd_stopped": 77303786.55015472,
+            "holds": 2123,
+            "freezes": 117,
+            "freeze_precision": 0.9572649572649573,
+            "legit_payments_stopped": 2025,
+            "per_pattern_recall": {
+              "BIPARTITE": {
+                "positives": 11,
+                "recall": 0.7272727272727273
+              },
+              "CYCLE": {
+                "positives": 16,
+                "recall": 0.5
+              },
+              "FAN-IN": {
+                "positives": 29,
+                "recall": 0.7586206896551724
+              },
+              "FAN-OUT": {
+                "positives": 11,
+                "recall": 0.7272727272727273
+              },
+              "GATHER-SCATTER": {
+                "positives": 80,
+                "recall": 0.7
+              },
+              "RANDOM": {
+                "positives": 17,
+                "recall": 0.5882352941176471
+              },
+              "SCATTER-GATHER": {
+                "positives": 43,
+                "recall": 0.4883720930232558
+              },
+              "STACK": {
+                "positives": 28,
+                "recall": 0.5714285714285714
+              },
+              "(unpatterned)": {
+                "positives": 54,
+                "recall": 0.018518518518518517
+              }
+            }
+          }
+        },
+        {
+          "member": 4,
+          "banks": 6129,
+          "view_rows": 1712908,
+          "owned_test_rows": 193011,
+          "alone": {
+            "n": 193011,
+            "positives": 388,
+            "f1": 0.6094003241491086,
+            "precision": 0.8209606986899564,
+            "recall": 0.4845360824742268,
+            "tp": 188,
+            "fp": 41,
+            "fn": 200,
+            "recall_at_review_budget": 0.6649484536082474,
+            "laundered_usd": 233643890.3451863,
+            "laundered_usd_stopped": 233367716.00601366,
+            "holds": 3129,
+            "freezes": 93,
+            "freeze_precision": 1.0,
+            "legit_payments_stopped": 2938,
+            "per_pattern_recall": {
+              "BIPARTITE": {
+                "positives": 16,
+                "recall": 0.625
+              },
+              "CYCLE": {
+                "positives": 18,
+                "recall": 0.5555555555555556
+              },
+              "FAN-IN": {
+                "positives": 15,
+                "recall": 0.8666666666666667
+              },
+              "FAN-OUT": {
+                "positives": 50,
+                "recall": 0.7
+              },
+              "GATHER-SCATTER": {
+                "positives": 112,
+                "recall": 0.625
+              },
+              "RANDOM": {
+                "positives": 17,
+                "recall": 0.6470588235294118
+              },
+              "SCATTER-GATHER": {
+                "positives": 46,
+                "recall": 0.6086956521739131
+              },
+              "STACK": {
+                "positives": 23,
+                "recall": 0.4782608695652174
+              },
+              "(unpatterned)": {
+                "positives": 91,
+                "recall": 0.0
+              }
+            }
+          },
+          "together": {
+            "n": 193011,
+            "positives": 388,
+            "f1": 0.7117552334943639,
+            "precision": 0.9484978540772532,
+            "recall": 0.5695876288659794,
+            "tp": 221,
+            "fp": 12,
+            "fn": 167,
+            "recall_at_review_budget": 0.7319587628865979,
+            "laundered_usd": 233643890.3451863,
+            "laundered_usd_stopped": 233257242.98173657,
+            "holds": 2264,
+            "freezes": 166,
+            "freeze_precision": 0.9939759036144579,
+            "legit_payments_stopped": 2145,
+            "per_pattern_recall": {
+              "BIPARTITE": {
+                "positives": 16,
+                "recall": 0.5625
+              },
+              "CYCLE": {
+                "positives": 18,
+                "recall": 0.6111111111111112
+              },
+              "FAN-IN": {
+                "positives": 15,
+                "recall": 0.9333333333333333
+              },
+              "FAN-OUT": {
+                "positives": 50,
+                "recall": 0.8
+              },
+              "GATHER-SCATTER": {
+                "positives": 112,
+                "recall": 0.7946428571428571
+              },
+              "RANDOM": {
+                "positives": 17,
+                "recall": 0.7647058823529411
+              },
+              "SCATTER-GATHER": {
+                "positives": 46,
+                "recall": 0.7391304347826086
+              },
+              "STACK": {
+                "positives": 23,
+                "recall": 0.4782608695652174
+              },
+              "(unpatterned)": {
+                "positives": 91,
+                "recall": 0.0
+              }
+            }
+          }
+        }
+      ],
+      "alone_overall": {
+        "f1": 0.561161022805805,
+        "precision": 0.740200546946217,
+        "recall": 0.4518642181413467,
+        "tp": 812,
+        "fp": 285,
+        "fn": 985,
+        "recall_at_review_budget_per_member_mean": 0.6059501181958331,
+        "laundered_usd_stopped": 730271680.6831789,
+        "laundered_usd": 732344204.4489855
+      }
+    },
+    "1": {
+      "members": [
+        {
+          "member": 0,
+          "banks": 6203,
+          "view_rows": 2102529,
+          "owned_test_rows": 297415,
+          "alone": {
+            "n": 297415,
+            "positives": 417,
+            "f1": 0.4745222929936306,
+            "precision": 0.7061611374407583,
+            "recall": 0.35731414868105515,
+            "tp": 149,
+            "fp": 62,
+            "fn": 268,
+            "recall_at_review_budget": 0.4892086330935252,
+            "laundered_usd": 135350780.31161416,
+            "laundered_usd_stopped": 134466620.62498719,
+            "holds": 9839,
+            "freezes": 75,
+            "freeze_precision": 0.9733333333333334,
+            "legit_payments_stopped": 9711,
+            "per_pattern_recall": {
+              "BIPARTITE": {
+                "positives": 12,
+                "recall": 0.6666666666666666
+              },
+              "CYCLE": {
+                "positives": 26,
+                "recall": 0.46153846153846156
+              },
+              "FAN-IN": {
+                "positives": 22,
+                "recall": 0.5909090909090909
+              },
+              "FAN-OUT": {
+                "positives": 15,
+                "recall": 0.8666666666666667
+              },
+              "GATHER-SCATTER": {
+                "positives": 80,
+                "recall": 0.7375
+              },
+              "RANDOM": {
+                "positives": 14,
+                "recall": 0.7142857142857143
+              },
+              "SCATTER-GATHER": {
+                "positives": 25,
+                "recall": 0.72
+              },
+              "STACK": {
+                "positives": 24,
+                "recall": 0.625
+              },
+              "(unpatterned)": {
+                "positives": 199,
+                "recall": 0.005025125628140704
+              }
+            }
+          },
+          "together": {
+            "n": 297415,
+            "positives": 417,
+            "f1": 0.4833625218914186,
+            "precision": 0.8961038961038961,
+            "recall": 0.33093525179856115,
+            "tp": 138,
+            "fp": 16,
+            "fn": 279,
+            "recall_at_review_budget": 0.47721822541966424,
+            "laundered_usd": 135350780.31161416,
+            "laundered_usd_stopped": 134555722.65856662,
+            "holds": 10271,
+            "freezes": 102,
+            "freeze_precision": 0.9705882352941176,
+            "legit_payments_stopped": 10163,
+            "per_pattern_recall": {
+              "BIPARTITE": {
+                "positives": 12,
+                "recall": 0.6666666666666666
+              },
+              "CYCLE": {
+                "positives": 26,
+                "recall": 0.4230769230769231
+              },
+              "FAN-IN": {
+                "positives": 22,
+                "recall": 0.5909090909090909
+              },
+              "FAN-OUT": {
+                "positives": 15,
+                "recall": 0.6666666666666666
+              },
+              "GATHER-SCATTER": {
+                "positives": 80,
+                "recall": 0.7125
+              },
+              "RANDOM": {
+                "positives": 14,
+                "recall": 0.5714285714285714
+              },
+              "SCATTER-GATHER": {
+                "positives": 25,
+                "recall": 0.8
+              },
+              "STACK": {
+                "positives": 24,
+                "recall": 0.4583333333333333
+              },
+              "(unpatterned)": {
+                "positives": 199,
+                "recall": 0.0
+              }
+            }
+          }
+        },
+        {
+          "member": 1,
+          "banks": 6059,
+          "view_rows": 1720461,
+          "owned_test_rows": 196909,
+          "alone": {
+            "n": 196909,
+            "positives": 419,
+            "f1": 0.5126475548060708,
+            "precision": 0.8735632183908046,
+            "recall": 0.3627684964200477,
+            "tp": 152,
+            "fp": 22,
+            "fn": 267,
+            "recall_at_review_budget": 0.6968973747016707,
+            "laundered_usd": 115874454.38339224,
+            "laundered_usd_stopped": 115538786.1685768,
+            "holds": 2359,
+            "freezes": 65,
+            "freeze_precision": 0.9846153846153847,
+            "legit_payments_stopped": 2099,
+            "per_pattern_recall": {
+              "BIPARTITE": {
+                "positives": 14,
+                "recall": 0.5714285714285714
+              },
+              "CYCLE": {
+                "positives": 25,
+                "recall": 0.24
+              },
+              "FAN-IN": {
+                "positives": 41,
+                "recall": 0.4878048780487805
+              },
+              "FAN-OUT": {
+                "positives": 43,
+                "recall": 0.4418604651162791
+              },
+              "GATHER-SCATTER": {
+                "positives": 117,
+                "recall": 0.37606837606837606
+              },
+              "RANDOM": {
+                "positives": 25,
+                "recall": 0.6
+              },
+              "SCATTER-GATHER": {
+                "positives": 64,
+                "recall": 0.421875
+              },
+              "STACK": {
+                "positives": 28,
+                "recall": 0.4642857142857143
+              },
+              "(unpatterned)": {
+                "positives": 62,
+                "recall": 0.0
+              }
+            }
+          },
+          "together": {
+            "n": 196909,
+            "positives": 419,
+            "f1": 0.6953937592867756,
+            "precision": 0.9212598425196851,
+            "recall": 0.5584725536992841,
+            "tp": 234,
+            "fp": 20,
+            "fn": 185,
+            "recall_at_review_budget": 0.7589498806682577,
+            "laundered_usd": 115874454.38339224,
+            "laundered_usd_stopped": 115532518.94705005,
+            "holds": 2190,
+            "freezes": 166,
+            "freeze_precision": 0.9879518072289156,
+            "legit_payments_stopped": 2025,
+            "per_pattern_recall": {
+              "BIPARTITE": {
+                "positives": 14,
+                "recall": 0.5714285714285714
+              },
+              "CYCLE": {
+                "positives": 25,
+                "recall": 0.4
+              },
+              "FAN-IN": {
+                "positives": 41,
+                "recall": 0.7317073170731707
+              },
+              "FAN-OUT": {
+                "positives": 43,
+                "recall": 0.7209302325581395
+              },
+              "GATHER-SCATTER": {
+                "positives": 117,
+                "recall": 0.6923076923076923
+              },
+              "RANDOM": {
+                "positives": 25,
+                "recall": 0.68
+              },
+              "SCATTER-GATHER": {
+                "positives": 64,
+                "recall": 0.625
+              },
+              "STACK": {
+                "positives": 28,
+                "recall": 0.5714285714285714
+              },
+              "(unpatterned)": {
+                "positives": 62,
+                "recall": 0.016129032258064516
+              }
+            }
+          }
+        },
+        {
+          "member": 2,
+          "banks": 6134,
+          "view_rows": 1700393,
+          "owned_test_rows": 194629,
+          "alone": {
+            "n": 194629,
+            "positives": 392,
+            "f1": 0.5331069609507639,
+            "precision": 0.7969543147208121,
+            "recall": 0.4005102040816326,
+            "tp": 157,
+            "fp": 40,
+            "fn": 235,
+            "recall_at_review_budget": 0.6658163265306123,
+            "laundered_usd": 198215642.1981846,
+            "laundered_usd_stopped": 197869564.18026015,
+            "holds": 2517,
+            "freezes": 48,
+            "freeze_precision": 1.0,
+            "legit_payments_stopped": 2282,
+            "per_pattern_recall": {
+              "BIPARTITE": {
+                "positives": 15,
+                "recall": 0.4
+              },
+              "CYCLE": {
+                "positives": 22,
+                "recall": 0.4090909090909091
+              },
+              "FAN-IN": {
+                "positives": 23,
+                "recall": 0.5652173913043478
+              },
+              "FAN-OUT": {
+                "positives": 20,
+                "recall": 0.65
+              },
+              "GATHER-SCATTER": {
+                "positives": 100,
+                "recall": 0.51
+              },
+              "RANDOM": {
+                "positives": 15,
+                "recall": 0.26666666666666666
+              },
+              "SCATTER-GATHER": {
+                "positives": 83,
+                "recall": 0.5301204819277109
+              },
+              "STACK": {
+                "positives": 35,
+                "recall": 0.4857142857142857
+              },
+              "(unpatterned)": {
+                "positives": 79,
+                "recall": 0.0
+              }
+            }
+          },
+          "together": {
+            "n": 194629,
+            "positives": 392,
+            "f1": 0.6666666666666667,
+            "precision": 0.911504424778761,
+            "recall": 0.5255102040816326,
+            "tp": 206,
+            "fp": 20,
+            "fn": 186,
+            "recall_at_review_budget": 0.7168367346938775,
+            "laundered_usd": 198215642.1981846,
+            "laundered_usd_stopped": 197764407.3127883,
+            "holds": 2273,
+            "freezes": 153,
+            "freeze_precision": 0.9738562091503268,
+            "legit_payments_stopped": 2138,
+            "per_pattern_recall": {
+              "BIPARTITE": {
+                "positives": 15,
+                "recall": 0.4
+              },
+              "CYCLE": {
+                "positives": 22,
+                "recall": 0.5
+              },
+              "FAN-IN": {
+                "positives": 23,
+                "recall": 0.782608695652174
+              },
+              "FAN-OUT": {
+                "positives": 20,
+                "recall": 0.8
+              },
+              "GATHER-SCATTER": {
+                "positives": 100,
+                "recall": 0.68
+              },
+              "RANDOM": {
+                "positives": 15,
+                "recall": 0.4666666666666667
+              },
+              "SCATTER-GATHER": {
+                "positives": 83,
+                "recall": 0.7590361445783133
+              },
+              "STACK": {
+                "positives": 35,
+                "recall": 0.4857142857142857
+              },
+              "(unpatterned)": {
+                "positives": 79,
+                "recall": 0.0
+              }
+            }
+          }
+        },
+        {
+          "member": 3,
+          "banks": 6058,
+          "view_rows": 1387332,
+          "owned_test_rows": 148805,
+          "alone": {
+            "n": 148805,
+            "positives": 230,
+            "f1": 0.5535714285714286,
+            "precision": 0.8773584905660378,
+            "recall": 0.4043478260869565,
+            "tp": 93,
+            "fp": 13,
+            "fn": 137,
+            "recall_at_review_budget": 0.6434782608695652,
+            "laundered_usd": 142173034.4974833,
+            "laundered_usd_stopped": 142002343.57957503,
+            "holds": 2635,
+            "freezes": 57,
+            "freeze_precision": 1.0,
+            "legit_payments_stopped": 2522,
+            "per_pattern_recall": {
+              "BIPARTITE": {
+                "positives": 11,
+                "recall": 0.2727272727272727
+              },
+              "CYCLE": {
+                "positives": 18,
+                "recall": 0.5
+              },
+              "FAN-IN": {
+                "positives": 25,
+                "recall": 0.44
+              },
+              "FAN-OUT": {
+                "positives": 18,
+                "recall": 0.6111111111111112
+              },
+              "GATHER-SCATTER": {
+                "positives": 48,
+                "recall": 0.6041666666666666
+              },
+              "RANDOM": {
+                "positives": 16,
+                "recall": 0.5625
+              },
+              "SCATTER-GATHER": {
+                "positives": 29,
+                "recall": 0.3448275862068966
+              },
+              "STACK": {
+                "positives": 24,
+                "recall": 0.4583333333333333
+              },
+              "(unpatterned)": {
+                "positives": 41,
+                "recall": 0.0
+              }
+            }
+          },
+          "together": {
+            "n": 148805,
+            "positives": 230,
+            "f1": 0.6740331491712707,
+            "precision": 0.9242424242424242,
+            "recall": 0.5304347826086957,
+            "tp": 122,
+            "fp": 10,
+            "fn": 108,
+            "recall_at_review_budget": 0.7086956521739131,
+            "laundered_usd": 142173034.4974833,
+            "laundered_usd_stopped": 141998768.329819,
+            "holds": 1659,
+            "freezes": 79,
+            "freeze_precision": 0.9873417721518988,
+            "legit_payments_stopped": 1563,
+            "per_pattern_recall": {
+              "BIPARTITE": {
+                "positives": 11,
+                "recall": 0.6363636363636364
+              },
+              "CYCLE": {
+                "positives": 18,
+                "recall": 0.6111111111111112
+              },
+              "FAN-IN": {
+                "positives": 25,
+                "recall": 0.64
+              },
+              "FAN-OUT": {
+                "positives": 18,
+                "recall": 0.7777777777777778
+              },
+              "GATHER-SCATTER": {
+                "positives": 48,
+                "recall": 0.75
+              },
+              "RANDOM": {
+                "positives": 16,
+                "recall": 0.75
+              },
+              "SCATTER-GATHER": {
+                "positives": 29,
+                "recall": 0.5172413793103449
+              },
+              "STACK": {
+                "positives": 24,
+                "recall": 0.4583333333333333
+              },
+              "(unpatterned)": {
+                "positives": 41,
+                "recall": 0.0
+              }
+            }
+          }
+        },
+        {
+          "member": 4,
+          "banks": 6074,
+          "view_rows": 1692586,
+          "owned_test_rows": 177911,
+          "alone": {
+            "n": 177911,
+            "positives": 339,
+            "f1": 0.6214689265536723,
+            "precision": 0.859375,
+            "recall": 0.48672566371681414,
+            "tp": 165,
+            "fp": 27,
+            "fn": 174,
+            "recall_at_review_budget": 0.6548672566371682,
+            "laundered_usd": 140730293.05831113,
+            "laundered_usd_stopped": 140443900.591887,
+            "holds": 2113,
+            "freezes": 112,
+            "freeze_precision": 0.9910714285714286,
+            "legit_payments_stopped": 1988,
+            "per_pattern_recall": {
+              "BIPARTITE": {
+                "positives": 22,
+                "recall": 0.5454545454545454
+              },
+              "CYCLE": {
+                "positives": 18,
+                "recall": 0.5555555555555556
+              },
+              "FAN-IN": {
+                "positives": 26,
+                "recall": 0.46153846153846156
+              },
+              "FAN-OUT": {
+                "positives": 44,
+                "recall": 0.7727272727272727
+              },
+              "GATHER-SCATTER": {
+                "positives": 56,
+                "recall": 0.7678571428571429
+              },
+              "RANDOM": {
+                "positives": 16,
+                "recall": 0.5
+              },
+              "SCATTER-GATHER": {
+                "positives": 51,
+                "recall": 0.5882352941176471
+              },
+              "STACK": {
+                "positives": 29,
+                "recall": 0.5172413793103449
+              },
+              "(unpatterned)": {
+                "positives": 77,
+                "recall": 0.012987012987012988
+              }
+            }
+          },
+          "together": {
+            "n": 177911,
+            "positives": 339,
+            "f1": 0.6344294003868473,
+            "precision": 0.9213483146067416,
+            "recall": 0.4837758112094395,
+            "tp": 164,
+            "fp": 14,
+            "fn": 175,
+            "recall_at_review_budget": 0.7020648967551623,
+            "laundered_usd": 140730293.05831113,
+            "laundered_usd_stopped": 140365788.19471627,
+            "holds": 2193,
+            "freezes": 123,
+            "freeze_precision": 0.983739837398374,
+            "legit_payments_stopped": 2073,
+            "per_pattern_recall": {
+              "BIPARTITE": {
+                "positives": 22,
+                "recall": 0.5
+              },
+              "CYCLE": {
+                "positives": 18,
+                "recall": 0.6666666666666666
+              },
+              "FAN-IN": {
+                "positives": 26,
+                "recall": 0.6923076923076923
+              },
+              "FAN-OUT": {
+                "positives": 44,
+                "recall": 0.75
+              },
+              "GATHER-SCATTER": {
+                "positives": 56,
+                "recall": 0.6785714285714286
+              },
+              "RANDOM": {
+                "positives": 16,
+                "recall": 0.5625
+              },
+              "SCATTER-GATHER": {
+                "positives": 51,
+                "recall": 0.5882352941176471
+              },
+              "STACK": {
+                "positives": 29,
+                "recall": 0.4482758620689655
+              },
+              "(unpatterned)": {
+                "positives": 77,
+                "recall": 0.0
+              }
+            }
+          }
+        }
+      ],
+      "alone_overall": {
+        "f1": 0.5349271572655958,
+        "precision": 0.8136363636363636,
+        "recall": 0.3984418475236505,
+        "tp": 716,
+        "fp": 164,
+        "fn": 1081,
+        "recall_at_review_budget_per_member_mean": 0.6300535703665083,
+        "laundered_usd_stopped": 730321215.1452862,
+        "laundered_usd": 732344204.4489855
+      }
+    },
+    "2": {
+      "members": [
+        {
+          "member": 0,
+          "banks": 6131,
+          "view_rows": 1620525,
+          "owned_test_rows": 176611,
+          "alone": {
+            "n": 176611,
+            "positives": 319,
+            "f1": 0.5980582524271846,
+            "precision": 0.7857142857142857,
+            "recall": 0.4827586206896552,
+            "tp": 154,
+            "fp": 42,
+            "fn": 165,
+            "recall_at_review_budget": 0.64576802507837,
+            "laundered_usd": 207467993.03475004,
+            "laundered_usd_stopped": 207138212.20734426,
+            "holds": 2125,
+            "freezes": 62,
+            "freeze_precision": 0.967741935483871,
+            "legit_payments_stopped": 1958,
+            "per_pattern_recall": {
+              "BIPARTITE": {
+                "positives": 15,
+                "recall": 0.7333333333333333
+              },
+              "CYCLE": {
+                "positives": 18,
+                "recall": 0.7222222222222222
+              },
+              "FAN-IN": {
+                "positives": 24,
+                "recall": 0.5416666666666666
+              },
+              "FAN-OUT": {
+                "positives": 30,
+                "recall": 0.8
+              },
+              "GATHER-SCATTER": {
+                "positives": 54,
+                "recall": 0.6296296296296297
+              },
+              "RANDOM": {
+                "positives": 14,
+                "recall": 0.5714285714285714
+              },
+              "SCATTER-GATHER": {
+                "positives": 70,
+                "recall": 0.5571428571428572
+              },
+              "STACK": {
+                "positives": 28,
+                "recall": 0.35714285714285715
+              },
+              "(unpatterned)": {
+                "positives": 66,
+                "recall": 0.030303030303030304
+              }
+            }
+          },
+          "together": {
+            "n": 176611,
+            "positives": 319,
+            "f1": 0.6452905811623246,
+            "precision": 0.8944444444444445,
+            "recall": 0.5047021943573667,
+            "tp": 161,
+            "fp": 19,
+            "fn": 158,
+            "recall_at_review_budget": 0.6865203761755486,
+            "laundered_usd": 207467993.03475004,
+            "laundered_usd_stopped": 207154070.88959464,
+            "holds": 2102,
+            "freezes": 113,
+            "freeze_precision": 0.9734513274336283,
+            "legit_payments_stopped": 1979,
+            "per_pattern_recall": {
+              "BIPARTITE": {
+                "positives": 15,
+                "recall": 0.7333333333333333
+              },
+              "CYCLE": {
+                "positives": 18,
+                "recall": 0.6666666666666666
+              },
+              "FAN-IN": {
+                "positives": 24,
+                "recall": 0.6666666666666666
+              },
+              "FAN-OUT": {
+                "positives": 30,
+                "recall": 0.8333333333333334
+              },
+              "GATHER-SCATTER": {
+                "positives": 54,
+                "recall": 0.6851851851851852
+              },
+              "RANDOM": {
+                "positives": 14,
+                "recall": 0.5714285714285714
+              },
+              "SCATTER-GATHER": {
+                "positives": 70,
+                "recall": 0.5571428571428572
+              },
+              "STACK": {
+                "positives": 28,
+                "recall": 0.4642857142857143
+              },
+              "(unpatterned)": {
+                "positives": 66,
+                "recall": 0.0
+              }
+            }
+          }
+        },
+        {
+          "member": 1,
+          "banks": 6173,
+          "view_rows": 1605044,
+          "owned_test_rows": 179873,
+          "alone": {
+            "n": 179873,
+            "positives": 296,
+            "f1": 0.5522041763341068,
+            "precision": 0.8814814814814815,
+            "recall": 0.40202702702702703,
+            "tp": 119,
+            "fp": 16,
+            "fn": 177,
+            "recall_at_review_budget": 0.6621621621621622,
+            "laundered_usd": 75005208.44444692,
+            "laundered_usd_stopped": 74754334.64355266,
+            "holds": 1888,
+            "freezes": 63,
+            "freeze_precision": 0.9841269841269841,
+            "legit_payments_stopped": 1735,
+            "per_pattern_recall": {
+              "BIPARTITE": {
+                "positives": 10,
+                "recall": 0.6
+              },
+              "CYCLE": {
+                "positives": 24,
+                "recall": 0.4166666666666667
+              },
+              "FAN-IN": {
+                "positives": 27,
+                "recall": 0.48148148148148145
+              },
+              "FAN-OUT": {
+                "positives": 22,
+                "recall": 0.5
+              },
+              "GATHER-SCATTER": {
+                "positives": 63,
+                "recall": 0.42857142857142855
+              },
+              "RANDOM": {
+                "positives": 21,
+                "recall": 0.7142857142857143
+              },
+              "SCATTER-GATHER": {
+                "positives": 45,
+                "recall": 0.4666666666666667
+              },
+              "STACK": {
+                "positives": 23,
+                "recall": 0.6956521739130435
+              },
+              "(unpatterned)": {
+                "positives": 61,
+                "recall": 0.0
+              }
+            }
+          },
+          "together": {
+            "n": 179873,
+            "positives": 296,
+            "f1": 0.6520787746170679,
+            "precision": 0.9254658385093167,
+            "recall": 0.5033783783783784,
+            "tp": 149,
+            "fp": 12,
+            "fn": 147,
+            "recall_at_review_budget": 0.7195945945945946,
+            "laundered_usd": 75005208.44444692,
+            "laundered_usd_stopped": 74644453.04007094,
+            "holds": 1991,
+            "freezes": 103,
+            "freeze_precision": 0.9805825242718447,
+            "legit_payments_stopped": 1876,
+            "per_pattern_recall": {
+              "BIPARTITE": {
+                "positives": 10,
+                "recall": 0.8
+              },
+              "CYCLE": {
+                "positives": 24,
+                "recall": 0.375
+              },
+              "FAN-IN": {
+                "positives": 27,
+                "recall": 0.7037037037037037
+              },
+              "FAN-OUT": {
+                "positives": 22,
+                "recall": 0.7272727272727273
+              },
+              "GATHER-SCATTER": {
+                "positives": 63,
+                "recall": 0.6190476190476191
+              },
+              "RANDOM": {
+                "positives": 21,
+                "recall": 0.7619047619047619
+              },
+              "SCATTER-GATHER": {
+                "positives": 45,
+                "recall": 0.6222222222222222
+              },
+              "STACK": {
+                "positives": 23,
+                "recall": 0.6086956521739131
+              },
+              "(unpatterned)": {
+                "positives": 61,
+                "recall": 0.0
+              }
+            }
+          }
+        },
+        {
+          "member": 2,
+          "banks": 6069,
+          "view_rows": 1663159,
+          "owned_test_rows": 184489,
+          "alone": {
+            "n": 184489,
+            "positives": 367,
+            "f1": 0.626465661641541,
+            "precision": 0.8130434782608695,
+            "recall": 0.5095367847411444,
+            "tp": 187,
+            "fp": 43,
+            "fn": 180,
+            "recall_at_review_budget": 0.7002724795640327,
+            "laundered_usd": 69007699.43912387,
+            "laundered_usd_stopped": 68784021.61673377,
+            "holds": 2853,
+            "freezes": 79,
+            "freeze_precision": 1.0,
+            "legit_payments_stopped": 2650,
+            "per_pattern_recall": {
+              "BIPARTITE": {
+                "positives": 18,
+                "recall": 0.4444444444444444
+              },
+              "CYCLE": {
+                "positives": 25,
+                "recall": 0.6
+              },
+              "FAN-IN": {
+                "positives": 24,
+                "recall": 0.5416666666666666
+              },
+              "FAN-OUT": {
+                "positives": 66,
+                "recall": 0.696969696969697
+              },
+              "GATHER-SCATTER": {
+                "positives": 74,
+                "recall": 0.7297297297297297
+              },
+              "RANDOM": {
+                "positives": 19,
+                "recall": 0.6842105263157895
+              },
+              "SCATTER-GATHER": {
+                "positives": 46,
+                "recall": 0.5217391304347826
+              },
+              "STACK": {
+                "positives": 28,
+                "recall": 0.4642857142857143
+              },
+              "(unpatterned)": {
+                "positives": 67,
+                "recall": 0.014925373134328358
+              }
+            }
+          },
+          "together": {
+            "n": 184489,
+            "positives": 367,
+            "f1": 0.653913043478261,
+            "precision": 0.9038461538461539,
+            "recall": 0.5122615803814714,
+            "tp": 188,
+            "fp": 20,
+            "fn": 179,
+            "recall_at_review_budget": 0.7465940054495913,
+            "laundered_usd": 69007699.43912387,
+            "laundered_usd_stopped": 68721390.47943357,
+            "holds": 2239,
+            "freezes": 123,
+            "freeze_precision": 0.983739837398374,
+            "legit_payments_stopped": 2084,
+            "per_pattern_recall": {
+              "BIPARTITE": {
+                "positives": 18,
+                "recall": 0.2777777777777778
+              },
+              "CYCLE": {
+                "positives": 25,
+                "recall": 0.52
+              },
+              "FAN-IN": {
+                "positives": 24,
+                "recall": 0.7083333333333334
+              },
+              "FAN-OUT": {
+                "positives": 66,
+                "recall": 0.6666666666666666
+              },
+              "GATHER-SCATTER": {
+                "positives": 74,
+                "recall": 0.7027027027027027
+              },
+              "RANDOM": {
+                "positives": 19,
+                "recall": 0.631578947368421
+              },
+              "SCATTER-GATHER": {
+                "positives": 46,
+                "recall": 0.6521739130434783
+              },
+              "STACK": {
+                "positives": 28,
+                "recall": 0.5
+              },
+              "(unpatterned)": {
+                "positives": 67,
+                "recall": 0.014925373134328358
+              }
+            }
+          }
+        },
+        {
+          "member": 3,
+          "banks": 5968,
+          "view_rows": 1815858,
+          "owned_test_rows": 213506,
+          "alone": {
+            "n": 213506,
+            "positives": 383,
+            "f1": 0.6298701298701298,
+            "precision": 0.8326180257510729,
+            "recall": 0.5065274151436031,
+            "tp": 194,
+            "fp": 39,
+            "fn": 189,
+            "recall_at_review_budget": 0.6840731070496083,
+            "laundered_usd": 133351214.6227895,
+            "laundered_usd_stopped": 133024806.39198518,
+            "holds": 2629,
+            "freezes": 53,
+            "freeze_precision": 0.9811320754716981,
+            "legit_payments_stopped": 2396,
+            "per_pattern_recall": {
+              "BIPARTITE": {
+                "positives": 17,
+                "recall": 0.35294117647058826
+              },
+              "CYCLE": {
+                "positives": 29,
+                "recall": 0.3448275862068966
+              },
+              "FAN-IN": {
+                "positives": 42,
+                "recall": 0.5476190476190477
+              },
+              "FAN-OUT": {
+                "positives": 6,
+                "recall": 0.6666666666666666
+              },
+              "GATHER-SCATTER": {
+                "positives": 109,
+                "recall": 0.7339449541284404
+              },
+              "RANDOM": {
+                "positives": 14,
+                "recall": 0.42857142857142855
+              },
+              "SCATTER-GATHER": {
+                "positives": 59,
+                "recall": 0.7796610169491526
+              },
+              "STACK": {
+                "positives": 34,
+                "recall": 0.5294117647058824
+              },
+              "(unpatterned)": {
+                "positives": 73,
+                "recall": 0.0136986301369863
+              }
+            }
+          },
+          "together": {
+            "n": 213506,
+            "positives": 383,
+            "f1": 0.6811352253756261,
+            "precision": 0.9444444444444444,
+            "recall": 0.5326370757180157,
+            "tp": 204,
+            "fp": 12,
+            "fn": 179,
+            "recall_at_review_budget": 0.7075718015665796,
+            "laundered_usd": 133351214.6227895,
+            "laundered_usd_stopped": 132944746.19805461,
+            "holds": 2385,
+            "freezes": 155,
+            "freeze_precision": 0.9870967741935484,
+            "legit_payments_stopped": 2259,
+            "per_pattern_recall": {
+              "BIPARTITE": {
+                "positives": 17,
+                "recall": 0.47058823529411764
+              },
+              "CYCLE": {
+                "positives": 29,
+                "recall": 0.4827586206896552
+              },
+              "FAN-IN": {
+                "positives": 42,
+                "recall": 0.5952380952380952
+              },
+              "FAN-OUT": {
+                "positives": 6,
+                "recall": 0.8333333333333334
+              },
+              "GATHER-SCATTER": {
+                "positives": 109,
+                "recall": 0.7247706422018348
+              },
+              "RANDOM": {
+                "positives": 14,
+                "recall": 0.7142857142857143
+              },
+              "SCATTER-GATHER": {
+                "positives": 59,
+                "recall": 0.7966101694915254
+              },
+              "STACK": {
+                "positives": 34,
+                "recall": 0.47058823529411764
+              },
+              "(unpatterned)": {
+                "positives": 73,
+                "recall": 0.0
+              }
+            }
+          }
+        },
+        {
+          "member": 4,
+          "banks": 6187,
+          "view_rows": 1904017,
+          "owned_test_rows": 261190,
+          "alone": {
+            "n": 261190,
+            "positives": 432,
+            "f1": 0.4938650306748466,
+            "precision": 0.7318181818181818,
+            "recall": 0.3726851851851852,
+            "tp": 161,
+            "fp": 59,
+            "fn": 271,
+            "recall_at_review_budget": 0.4699074074074074,
+            "laundered_usd": 247512088.90787512,
+            "laundered_usd_stopped": 246616702.34521234,
+            "holds": 8646,
+            "freezes": 93,
+            "freeze_precision": 0.978494623655914,
+            "legit_payments_stopped": 8520,
+            "per_pattern_recall": {
+              "BIPARTITE": {
+                "positives": 14,
+                "recall": 0.42857142857142855
+              },
+              "CYCLE": {
+                "positives": 13,
+                "recall": 0.6153846153846154
+              },
+              "FAN-IN": {
+                "positives": 20,
+                "recall": 0.75
+              },
+              "FAN-OUT": {
+                "positives": 16,
+                "recall": 0.875
+              },
+              "GATHER-SCATTER": {
+                "positives": 101,
+                "recall": 0.7128712871287128
+              },
+              "RANDOM": {
+                "positives": 18,
+                "recall": 0.5555555555555556
+              },
+              "SCATTER-GATHER": {
+                "positives": 32,
+                "recall": 0.71875
+              },
+              "STACK": {
+                "positives": 27,
+                "recall": 0.48148148148148145
+              },
+              "(unpatterned)": {
+                "positives": 191,
+                "recall": 0.0
+              }
+            }
+          },
+          "together": {
+            "n": 261190,
+            "positives": 432,
+            "f1": 0.530278232405892,
+            "precision": 0.9050279329608939,
+            "recall": 0.375,
+            "tp": 162,
+            "fp": 17,
+            "fn": 270,
+            "recall_at_review_budget": 0.5208333333333334,
+            "laundered_usd": 247512088.90787512,
+            "laundered_usd_stopped": 246752544.8357864,
+            "holds": 9869,
+            "freezes": 129,
+            "freeze_precision": 0.9767441860465116,
+            "legit_payments_stopped": 9764,
+            "per_pattern_recall": {
+              "BIPARTITE": {
+                "positives": 14,
+                "recall": 0.5714285714285714
+              },
+              "CYCLE": {
+                "positives": 13,
+                "recall": 0.5384615384615384
+              },
+              "FAN-IN": {
+                "positives": 20,
+                "recall": 0.9
+              },
+              "FAN-OUT": {
+                "positives": 16,
+                "recall": 0.875
+              },
+              "GATHER-SCATTER": {
+                "positives": 101,
+                "recall": 0.7227722772277227
+              },
+              "RANDOM": {
+                "positives": 18,
+                "recall": 0.3888888888888889
+              },
+              "SCATTER-GATHER": {
+                "positives": 32,
+                "recall": 0.75
+              },
+              "STACK": {
+                "positives": 27,
+                "recall": 0.4074074074074074
+              },
+              "(unpatterned)": {
+                "positives": 191,
+                "recall": 0.0
+              }
+            }
+          }
+        }
+      ],
+      "alone_overall": {
+        "f1": 0.5798648167911775,
+        "precision": 0.8037475345167653,
+        "recall": 0.4535336672231497,
+        "tp": 815,
+        "fp": 199,
+        "fn": 982,
+        "recall_at_review_budget_per_member_mean": 0.6324366362523162,
+        "laundered_usd_stopped": 730318077.2048283,
+        "laundered_usd": 732344204.4489855
+      }
+    }
+  }
+}

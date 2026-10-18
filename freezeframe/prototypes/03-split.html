@@ -1,0 +1,675 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FreezeFrame · Split</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #0c0f13;
+  --ink-2: #12161c;
+  --ink-3: #181d25;
+  --line: #242b36;
+  --line-soft: #1b212a;
+  --paper: #ece7de;
+  --paper-2: #c9c4bb;
+  --muted: #8a919c;
+  --faint: #59606b;
+  --accent: #5ee4ff;            /* "together" — the one cool accent */
+  --accent-dim: rgba(94, 228, 255, .14);
+
+  /* decision states (warm/green family — never used for banks) */
+  --release: #6fcf97;
+  --hold: #f0b44c;
+  --freeze: #ef6a5f;
+
+  /* banks (blue/violet/pink/ice/sand family — never used for states) */
+  --bank-A: #7f9cff;
+  --bank-B: #b38bff;
+  --bank-C: #e48fd4;
+  --bank-D: #9fcbe6;
+  --bank-E: #cbbf9f;
+
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  --t: 420ms;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background:
+    radial-gradient(1200px 500px at 72% -10%, rgba(94, 228, 255, .06), transparent 60%),
+    radial-gradient(900px 400px at 10% 110%, rgba(179, 139, 255, .045), transparent 60%),
+    var(--ink);
+  color: var(--paper);
+  font: 15px/1.45 var(--display);
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: 104px; /* room for the sticky console */
+}
+.mono { font-family: var(--mono); font-feature-settings: "zero" 1; }
+.wrap { max-width: 1680px; margin: 0 auto; padding: 0 40px; }
+
+/* ---------- header ---------- */
+header.top {
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 24px;
+  padding: 28px 0 18px; border-bottom: 1px solid var(--line-soft);
+}
+.brand { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.brand h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -.01em; }
+.brand .sub { color: var(--muted); font-size: 14px; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; }
+.badge {
+  font: 500 11.5px/1 var(--mono); letter-spacing: .02em; color: var(--paper-2);
+  padding: 7px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--ink-2);
+}
+.badge b { color: var(--muted); font-weight: 400; }
+
+/* ---------- headline deltas ---------- */
+.deltas { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin: 30px 0 8px; }
+.delta { padding: 4px 36px 4px 0; }
+.delta + .delta { padding-left: 36px; border-left: 1px solid var(--line); }
+.delta .k { color: var(--muted); font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
+.delta .row { display: flex; align-items: baseline; gap: 18px; margin-top: 8px; flex-wrap: wrap; }
+.delta .from { font-size: 44px; font-weight: 500; color: var(--paper-2); letter-spacing: -.02em; }
+.delta .to { font-size: 64px; font-weight: 700; color: var(--accent); letter-spacing: -.03em; line-height: 1; }
+.delta .arrow { color: var(--faint); font-size: 28px; transform: translateY(-6px); }
+.delta .cap { display: flex; gap: 18px; margin-top: 6px; color: var(--muted); font-size: 13px; }
+.delta .cap span:first-child { min-width: 150px; }
+.delta .fine { margin-top: 10px; color: var(--muted); font-size: 12.5px; }
+.delta .fine strong { color: var(--paper-2); font-weight: 500; }
+
+/* ---------- chain route strip ---------- */
+section.route { margin: 28px 0 10px; }
+.section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.section-head h2 {
+  margin: 0; font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
+}
+.section-head .note { color: var(--faint); font-size: 12.5px; }
+#routeSvg { display: block; width: 100%; height: 132px; margin-top: 8px; overflow: visible; }
+#routeSvg .seg { fill: none; stroke-width: 2.5; stroke-linecap: round; transition: stroke var(--t) var(--ease); }
+#routeSvg .seg-base { fill: none; stroke: var(--line); stroke-width: 2; stroke-dasharray: 3 5; }
+#routeSvg .seg-live { stroke-dasharray: var(--len); stroke-dashoffset: var(--len);
+  transition: stroke-dashoffset 600ms var(--ease), stroke var(--t) var(--ease); }
+#routeSvg .seg-live.on { stroke-dashoffset: 0; }
+#routeSvg .node circle { fill: var(--ink); stroke-width: 2.5; }
+#routeSvg .node text { font: 500 12px var(--mono); fill: var(--paper); text-anchor: middle; }
+#routeSvg .node .bank { font: 500 11px var(--display); letter-spacing: .04em; }
+#routeSvg .hopnum { font: 400 10.5px var(--mono); fill: var(--faint); text-anchor: middle; }
+#routeSvg .origin circle { stroke-dasharray: 3 3; }
+.timebar { position: relative; height: 34px; margin: 2px 0 0; }
+.timebar .axis { position: absolute; left: 0; right: 0; top: 12px; height: 1px; background: var(--line); }
+.timebar .tick { position: absolute; top: 7px; width: 1px; height: 11px; background: var(--paper-2); opacity: .55;
+  transition: background var(--t) var(--ease), opacity var(--t) var(--ease); }
+.timebar .tick.done { opacity: 1; }
+.timebar .day { position: absolute; top: 18px; font: 400 10.5px var(--mono); color: var(--faint); transform: translateX(-50%); }
+.timebar .cursor { position: absolute; top: 3px; width: 2px; height: 19px; background: var(--accent);
+  border-radius: 1px; box-shadow: 0 0 0 4px var(--accent-dim); opacity: 0;
+  transition: left 700ms var(--ease), opacity var(--t) var(--ease); }
+.timebar .cursor.show { opacity: 1; }
+
+/* ---------- the split ---------- */
+section.split { margin-top: 26px; }
+.cols, .hoprow {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(380px, 460px) minmax(0, 1fr);
+  align-items: stretch;
+}
+.cols { border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+.colhead { padding: 0 22px; }
+.colhead.left { text-align: right; }
+.colhead h3 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -.01em; }
+.colhead.right h3 { color: var(--accent); }
+.colhead p { margin: 4px 0 0; color: var(--muted); font-size: 12.5px; }
+.colhead .count { font: 500 12px var(--mono); color: var(--paper-2); margin-top: 8px; }
+.colhead .count b { font-weight: 500; color: var(--paper); }
+.colhead.mid { text-align: center; border-left: 1px solid var(--line-soft); border-right: 1px solid var(--line-soft); }
+
+.hoprow { border-bottom: 1px solid var(--line-soft); min-height: 74px; }
+.spine {
+  position: relative; display: grid; grid-template-columns: 38px 1fr auto; align-items: center; gap: 12px;
+  padding: 12px 18px; background: var(--ink-2);
+  border-left: 1px solid var(--line-soft); border-right: 1px solid var(--line-soft);
+  transition: background var(--t) var(--ease);
+}
+.spine::before { content: ""; position: absolute; left: -1px; top: 0; bottom: 0; width: 2px; background: var(--accent);
+  transform: scaleY(0); transition: transform var(--t) var(--ease); }
+.hoprow.current .spine { background: var(--ink-3); }
+.hoprow.current .spine::before { transform: scaleY(1); }
+.spine .n { font: 500 12px var(--mono); color: var(--faint); }
+.spine .n b { display: block; font: 600 20px var(--display); color: var(--paper); }
+.spine .who { display: flex; align-items: center; gap: 8px; font-size: 14px; white-space: nowrap; }
+.spine .when { font: 400 11.5px var(--mono); color: var(--muted); margin-top: 3px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; }
+.chip i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+.chip .acct { font: 500 12px var(--mono); color: var(--paper-2); }
+.spine .to-arrow { color: var(--faint); }
+.spine .amt { font: 500 14px var(--mono); text-align: right; }
+.spine .amt small { display: block; font-size: 10.5px; color: var(--faint); font-weight: 400; }
+
+.wing { position: relative; display: flex; align-items: center; padding: 0 22px; gap: 14px; overflow: hidden; }
+.wing.left { justify-content: flex-end; }
+.wing .ghost { color: var(--faint); font: 400 12px var(--mono); transition: opacity 250ms var(--ease); }
+.wing.revealed .ghost { opacity: 0; position: absolute; }
+
+/* path from the spine into each wing — draws on with scaleX */
+.path { position: absolute; top: 50%; height: 0; transform: scaleX(0); transition: transform 520ms var(--ease); }
+.wing.left .path { right: 0; transform-origin: right center; }
+.wing.right .path { left: 0; transform-origin: left center; }
+.wing.revealed .path { transform: scaleX(1); }
+.path.stop { width: 70px; border-top: 2px solid var(--hold); }
+.path.stop::after { content: ""; position: absolute; top: -9px; width: 2px; height: 16px; background: var(--hold); }
+.wing.left .path.stop::after { left: -1px; }
+/* released: dashed line runs off the outer edge and fades out — the money moves on */
+.path.slip { left: 0 !important; right: 0; border-top: 2px dashed var(--release);
+  -webkit-mask-image: linear-gradient(to left, #000 35%, rgba(0,0,0,.28) 100%);
+          mask-image: linear-gradient(to left, #000 35%, rgba(0,0,0,.28) 100%); }
+.path.slip::before { content: ""; position: absolute; left: 6px; top: -6px; width: 0; height: 0;
+  border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-right: 8px solid var(--release); }
+.wing.right .path.live { width: 60px; border-top: 2px solid var(--state, var(--line)); }
+
+.verdict { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 4px;
+  opacity: 0; transform: translateY(4px); transition: opacity 360ms var(--ease) 160ms, transform 360ms var(--ease) 160ms; }
+.wing.left .verdict { align-items: flex-end; text-align: right; margin-right: 84px; }
+.wing.left.slipped .verdict { margin-right: 0; background: var(--ink); padding: 2px 0 2px 10px; margin-right: 18px; }
+.wing.right .verdict { margin-left: 74px; }
+.wing.revealed .verdict { opacity: 1; transform: none; }
+.pill { display: inline-flex; align-items: center; gap: 7px; font: 500 12px/1 var(--mono);
+  padding: 6px 10px 6px 8px; border-radius: 6px; border: 1px solid; width: max-content; letter-spacing: .02em; }
+.pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.pill.release { color: var(--release); border-color: rgba(111, 207, 151, .35); background: rgba(111, 207, 151, .07); }
+.pill.hold { color: var(--hold); border-color: rgba(240, 180, 76, .35); background: rgba(240, 180, 76, .07); }
+.pill.freeze { color: var(--freeze); border-color: rgba(239, 106, 95, .35); background: rgba(239, 106, 95, .07); }
+.why { font-size: 12.5px; color: var(--paper-2); max-width: 340px; }
+.why.flag { color: var(--paper); }
+.why.flag::before { content: "↳ "; color: var(--accent); }
+.ref { font: 400 11px var(--mono); color: var(--faint); }
+.ref b { font-weight: 500; }
+
+/* ---------- lower panels ---------- */
+.lower { display: grid; grid-template-columns: 1.35fr 1fr; gap: 40px; margin-top: 40px; }
+.panel { border-top: 1px solid var(--line); padding-top: 16px; }
+#dumbbell { display: block; width: 100%; height: auto; margin-top: 10px; }
+#dumbbell text { font-family: var(--mono); }
+.legend { display: flex; gap: 18px; color: var(--muted); font-size: 12px; margin-top: 8px; flex-wrap: wrap; }
+.legend span { display: inline-flex; align-items: center; gap: 7px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.dot.alone { border: 1.5px solid var(--paper-2); }
+.dot.together { background: var(--accent); }
+table.bench { width: 100%; border-collapse: collapse; margin-top: 12px; font: 400 12.5px var(--mono); }
+table.bench th { text-align: right; color: var(--faint); font-weight: 400; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+table.bench th:first-child, table.bench td:first-child { text-align: left; }
+table.bench td { text-align: right; padding: 7px 8px; border-bottom: 1px solid var(--line-soft); color: var(--paper-2); }
+table.bench td.ok { color: var(--paper); }
+table.bench td.over { color: var(--muted); }
+.panel .foot { color: var(--faint); font-size: 12px; margin-top: 10px; }
+
+/* ---------- sticky console ---------- */
+.console {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+  background: rgba(12, 15, 19, .92); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border-top: 1px solid var(--line);
+}
+.console .inner { display: grid; grid-template-columns: auto minmax(260px, 1.1fr) 2.4fr; gap: 28px; align-items: center;
+  padding: 14px 40px 16px; max-width: 1680px; margin: 0 auto; }
+.progress { position: absolute; left: 0; top: -1px; height: 2px; background: var(--accent); width: 0;
+  transition: width 500ms linear; }
+.controls { display: flex; gap: 8px; }
+button {
+  font: 600 13px var(--display); color: var(--ink); background: var(--paper); border: 0; border-radius: 8px;
+  padding: 10px 16px; cursor: pointer; transition: background 200ms var(--ease), transform 120ms var(--ease);
+}
+button:hover { background: #fff; }
+button:active { transform: translateY(1px); }
+button.ghost { background: transparent; color: var(--paper-2); border: 1px solid var(--line); }
+button.ghost:hover { color: var(--paper); border-color: var(--faint); background: transparent; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.phase { display: flex; align-items: flex-start; gap: 10px; min-width: 0; }
+.phase .lamp { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--faint); margin-top: 6px;
+  transition: background var(--t) var(--ease); }
+.phase.live .lamp { background: var(--accent); animation: pulse 1.8s var(--ease) infinite; }
+.phase.skip .lamp { background: var(--paper-2); }
+.phase .t1 { font-weight: 600; font-size: 13.5px; }
+.phase .t2 { color: var(--muted); font-size: 12px; margin-top: 1px; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(94, 228, 255, .45); } 70% { box-shadow: 0 0 0 8px rgba(94, 228, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(94, 228, 255, 0); } }
+.kpis { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 0; }
+.kpi { padding: 0 14px; border-left: 1px solid var(--line-soft); }
+.kpi .v { font: 500 18px/1.15 var(--mono); white-space: nowrap; }
+.kpi .l { color: var(--muted); font-size: 11.5px; line-height: 1.25; margin-top: 3px; }
+.kpi.hold .v { color: var(--hold); }
+.kpi.freeze .v { color: var(--freeze); }
+.kpi.flag .v { color: var(--accent); }
+
+/* ---------- responsive ---------- */
+@media (max-width: 1280px) {
+  .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); row-gap: 10px; }
+  .console .inner { grid-template-columns: auto 1fr; }
+  .console .kpis { grid-column: 1 / -1; }
+  body { padding-bottom: 170px; }
+}
+@media (max-width: 1100px) {
+  .wrap { padding: 0 20px; }
+  .deltas { grid-template-columns: 1fr; }
+  .delta + .delta { padding-left: 0; border-left: 0; border-top: 1px solid var(--line); padding-top: 18px; margin-top: 18px; }
+  .cols { display: none; }
+  .hoprow { grid-template-columns: 1fr 1fr; grid-template-areas: "spine spine" "alone together"; padding: 6px 0 12px; }
+  .hoprow .spine { grid-area: spine; }
+  .hoprow .wing.left { grid-area: alone; justify-content: flex-start; min-height: 64px; }
+  .hoprow .wing.right { grid-area: together; min-height: 64px; }
+  .wing.left .verdict { align-items: flex-start; text-align: left; margin: 0 0 0 0; }
+  .wing.right .verdict { margin-left: 0; }
+  .wing .path { display: none; }
+  .wing.left::before { content: "Alone"; position: absolute; top: 8px; left: 22px; font-size: 11px; color: var(--faint); }
+  .wing.right::before { content: "Together"; position: absolute; top: 8px; left: 22px; font-size: 11px; color: var(--accent); }
+  .wing .verdict, .wing .ghost { margin-top: 18px; }
+  .lower { grid-template-columns: 1fr; }
+  .console .inner { padding: 12px 20px; gap: 14px; }
+  .delta .to { font-size: 52px; }
+}
+@media (max-width: 640px) {
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  body { padding-bottom: 260px; }
+  .spine { grid-template-columns: 30px 1fr; }
+  .spine .amt { grid-column: 2; text-align: left; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>FreezeFrame</h1>
+      <span class="sub" id="subtitle"></span>
+    </div>
+    <div class="badges">
+      <span class="badge" id="badgeEnclave"></span>
+      <span class="badge" id="badgeScoring"></span>
+    </div>
+  </header>
+
+  <section class="deltas" aria-label="Headline results, test split">
+    <div class="delta">
+      <div class="k">Minority-class F1 · test split</div>
+      <div class="row">
+        <span class="from mono" id="f1From"></span>
+        <span class="arrow">→</span>
+        <span class="to mono" id="f1To"></span>
+      </div>
+      <div class="cap"><span>each bank alone (mean of 3 splits)</span><span>together, in the enclave</span></div>
+      <div class="fine" id="f1Fine"></div>
+    </div>
+    <div class="delta">
+      <div class="k">Laundering payments frozen automatically</div>
+      <div class="row">
+        <span class="from mono" id="frFrom"></span>
+        <span class="arrow">→</span>
+        <span class="to mono" id="frTo"></span>
+      </div>
+      <div class="cap"><span>each bank alone (3 splits)</span><span id="frCap"></span></div>
+      <div class="fine" id="frFine"></div>
+    </div>
+  </section>
+
+  <section class="route" aria-label="The money's route">
+    <div class="section-head">
+      <h2>The money's route</h2>
+      <span class="note" id="routeNote"></span>
+    </div>
+    <svg id="routeSvg" role="img" aria-label="Accounts in the order the money moved through them"></svg>
+    <div class="timebar" id="timebar" aria-hidden="true"><div class="axis"></div><div class="cursor" id="cursor"></div></div>
+  </section>
+
+  <section class="split" aria-label="Each payment, alone versus together">
+    <div class="cols">
+      <div class="colhead left">
+        <h3>Each bank alone</h3>
+        <p>What the payer's bank decides with only its own view (experiment, split 0)</p>
+        <div class="count mono">slipped through <b id="slipCount">0</b> of 8</div>
+      </div>
+      <div class="colhead mid">
+        <h3>The payment</h3>
+        <p>In the order it happened</p>
+      </div>
+      <div class="colhead right">
+        <h3>Together, in the enclave</h3>
+        <p>Live decision from the streaming hot path, as it arrives</p>
+        <div class="count mono">stopped <b id="stopCount">0</b> of 8</div>
+      </div>
+    </div>
+    <div id="rows"></div>
+  </section>
+
+  <section class="lower">
+    <div class="panel">
+      <div class="section-head">
+        <h2>F1 by bank · alone vs together</h2>
+        <span class="note">test split · banks dealt at random (split 0)</span>
+      </div>
+      <svg id="dumbbell" role="img" aria-label="F1 per bank, alone versus together"></svg>
+      <div class="legend">
+        <span><span class="dot alone"></span>alone, own view only</span>
+        <span><span class="dot together"></span>together, pooled in the enclave</span>
+        <span id="rangeLegend"></span>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="section-head">
+        <h2>Streaming benchmark</h2>
+        <span class="note">dev laptop, not LinuxONE</span>
+      </div>
+      <table class="bench" id="bench">
+        <thead><tr><th>Speed</th><th>Payments / s</th><th>p50</th><th>p99</th><th>≤ 50 ms p99</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="foot">Latency from a payment's scheduled arrival to its published decision, warm tier in its own process.</div>
+    </div>
+  </section>
+</div>
+
+<div class="console" role="region" aria-label="Replay controls and live enclave metrics">
+  <div class="progress" id="progress"></div>
+  <div class="inner">
+    <div class="controls">
+      <button id="play">Play</button>
+      <button class="ghost" id="restart">Restart</button>
+    </div>
+    <div class="phase" id="phase" aria-live="polite">
+      <span class="lamp"></span>
+      <div><div class="t1" id="phaseT1">Ready</div><div class="t2" id="phaseT2">Press Play to replay a recorded run of the enclave.</div></div>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><div class="v" id="kRate">–</div><div class="l">payments / second</div></div>
+      <div class="kpi"><div class="v" id="kP50">–</div><div class="l">p50 decision latency</div></div>
+      <div class="kpi"><div class="v" id="kP99">–</div><div class="l">p99 decision latency</div></div>
+      <div class="kpi"><div class="v" id="kScored">–</div><div class="l">payments scored live</div></div>
+      <div class="kpi hold"><div class="v" id="kHeld">–</div><div class="l">held for review</div></div>
+      <div class="kpi freeze"><div class="v" id="kFrozen">–</div><div class="l">freeze requested</div></div>
+      <div class="kpi flag"><div class="v" id="kUp">–</div><div class="l">held at next hop</div></div>
+      <div class="kpi"><div class="v" id="kEsc">–</div><div class="l">warm-tier escalations</div></div>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="sim.js"></script>
+<script>
+(function () {
+  const { D, BANKS, hops, summary, replay, tween, fmtUsd, fmtMs, fmtInt } = window.FF;
+  const $ = (id) => document.getElementById(id);
+  const bankVar = (letter) => `var(--bank-${letter})`;
+  const stateVar = (a) => `var(--${a})`;
+  const f3 = (v) => v.toFixed(3);
+  const shortTs = (ts) => ts.slice(5, 16);
+
+  // ---------- static content ----------
+  const pattern = D.chain.pattern.toLowerCase();
+  const nBanks = new Set(hops.flatMap((h) => [h.fromBank, h.toBank])).size;
+  $("subtitle").textContent =
+    `A real ${pattern} laundering attempt from the test split · ${hops.length} payments · ${nBanks} banks · ${D.chain.span_hours.toFixed(1)} h`;
+  $("badgeEnclave").innerHTML = `<b>enclave</b> ${D.chain.attestation}`;
+  $("badgeScoring").innerHTML = D.chain.tree_format === "zdnn_tensors"
+    ? `<b>scoring</b> IBM Z AI accelerator` : `<b>scoring</b> CPU (${D.chain.tree_format})`;
+
+  $("f1From").textContent = f3(summary.aloneF1Mean);
+  $("f1To").textContent = f3(summary.togetherF1);
+  $("f1Fine").innerHTML = `Alone ranges <strong>${f3(summary.aloneF1Min)}–${f3(summary.aloneF1Max)}</strong> across three random deals of banks to five members.`;
+  $("frFrom").textContent = `${summary.frozenAloneMin}–${summary.frozenAloneMax}`;
+  $("frTo").textContent = fmtInt(summary.frozenTogether);
+  $("frCap").textContent = `together · of ${fmtInt(summary.laundering)} laundering payments`;
+  $("frFine").innerHTML = `Freezes require 95% precision on the tune split. Together, <strong>${summary.legitFrozen} legitimate payments</strong> were frozen across the whole test split.`;
+  $("routeNote").textContent = "left to right: accounts in the order the money reached them · colour = bank · the last payment returns to the first account";
+
+  // ---------- route strip (SVG) ----------
+  const svg = $("routeSvg");
+  const NS = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs = {}, parent) => {
+    const n = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+    if (parent) parent.appendChild(n);
+    return n;
+  };
+  // nodes: account receiving each hop in order, starting from hop 0's sender; last node = origin again
+  const nodes = [{ acct: hops[0].from, bank: hops[0].fromBank }].concat(
+    hops.map((h) => ({ acct: h.to, bank: h.toBank })));
+  const segs = [];
+  function drawRoute() {
+    svg.innerHTML = "";
+    const W = svg.clientWidth || 1200, H = 132, padX = 34, y = 52;
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    const step = (W - 2 * padX) / (nodes.length - 1);
+    const xs = nodes.map((_, i) => padX + i * step);
+    segs.length = 0;
+    hops.forEach((h, i) => {
+      const x1 = xs[i] + 17, x2 = xs[i + 1] - 17;
+      el("line", { class: "seg-base", x1, y1: y, x2, y2: y }, svg);
+      const len = Math.max(1, x2 - x1);
+      const live = el("line", { class: "seg seg-live", x1, y1: y, x2, y2: y, stroke: "var(--paper-2)" }, svg);
+      live.style.setProperty("--len", len);
+      segs.push(live);
+      const t = el("text", { class: "hopnum", x: (x1 + x2) / 2, y: y - 12 }, svg);
+      t.textContent = `payment ${i + 1}`;
+    });
+    nodes.forEach((n, i) => {
+      const g = el("g", { class: "node" + (i === nodes.length - 1 ? " origin" : ""), transform: `translate(${xs[i]},${y})` }, svg);
+      el("circle", { r: 16, stroke: bankVar(n.bank) }, g);
+      const a = el("text", { y: 4 }, g); a.textContent = n.acct;
+      const b = el("text", { class: "bank", y: 38, fill: bankVar(n.bank) }, g);
+      b.textContent = i === nodes.length - 1 ? `Bank ${n.bank} · origin` : `Bank ${n.bank}`;
+    });
+    // restore state colours after a resize
+    Object.values(ff.state.hops).forEach((ev) => paintSeg(ev.hop, ev.action, false));
+  }
+  function paintSeg(i, action, animate = true) {
+    const s = segs[i];
+    if (!s) return;
+    s.setAttribute("stroke", stateVar(action));
+    if (!animate) { s.classList.add("on"); return; }
+    requestAnimationFrame(() => s.classList.add("on"));
+  }
+
+  // ---------- time bar ----------
+  const t0 = hops[0].date.getTime(), t1 = hops[hops.length - 1].date.getTime();
+  const span = Math.max(1, t1 - t0);
+  const pos = (d) => 1.5 + 97 * ((d.getTime() - t0) / span);
+  const timebar = $("timebar");
+  hops.forEach((h, i) => {
+    const tk = document.createElement("div");
+    tk.className = "tick"; tk.id = "tick" + i; tk.style.left = pos(h.date) + "%";
+    tk.title = `payment ${i + 1} · ${shortTs(h.ts)}`;
+    timebar.appendChild(tk);
+  });
+  const days = new Set(hops.map((h) => h.ts.slice(0, 10)));
+  [...days].forEach((d) => {
+    const mid = new Date(d + "T12:00:00");
+    if (mid.getTime() < t0 - 6 * 36e5 || mid.getTime() > t1 + 6 * 36e5) return;
+    const lab = document.createElement("div");
+    lab.className = "day"; lab.style.left = Math.min(98, Math.max(2, pos(mid))) + "%";
+    lab.textContent = new Date(d + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+    timebar.appendChild(lab);
+  });
+
+  // ---------- rows ----------
+  const rows = $("rows");
+  const rowEls = hops.map((h, i) => {
+    const r = document.createElement("div");
+    r.className = "hoprow";
+    r.innerHTML = `
+      <div class="wing left" id="alone${i}">
+        <span class="ghost">waiting for payment ${i + 1}</span>
+        <div class="path"></div>
+        <div class="verdict"></div>
+      </div>
+      <div class="spine">
+        <div class="n">#<b>${i + 1}</b></div>
+        <div>
+          <div class="who">
+            <span class="chip"><i style="background:${bankVar(h.fromBank)}"></i>Bank ${h.fromBank} <span class="acct">${h.from}</span></span>
+            <span class="to-arrow">→</span>
+            <span class="chip"><i style="background:${bankVar(h.toBank)}"></i>Bank ${h.toBank} <span class="acct">${h.to}</span></span>
+          </div>
+          <div class="when">${shortTs(h.ts)} · ${h.fmt}</div>
+        </div>
+        <div class="amt">${fmtUsd(h.amount_usd)}<small>${h.currency}</small></div>
+      </div>
+      <div class="wing right" id="together${i}">
+        <span class="ghost">awaiting live decision</span>
+        <div class="path live"></div>
+        <div class="verdict"></div>
+      </div>`;
+    rows.appendChild(r);
+    return r;
+  });
+
+  const label = { release: "released", hold: "held for review", freeze: "freeze requested" };
+  function revealAlone(i) {
+    const h = hops[i], w = $("alone" + i);
+    const a = h.aloneAction;
+    const path = w.querySelector(".path");
+    path.className = "path " + (a === "release" ? "slip" : "stop");
+    if (a === "freeze") path.style.borderColor = "var(--freeze)";
+    w.classList.toggle("slipped", a === "release");
+    w.querySelector(".verdict").innerHTML = a == null
+      ? `<span class="ref">no experiment score for this payment</span>`
+      : `<span class="pill ${a}">${label[a]}</span>
+         <span class="why">${a === "release"
+            ? `Bank ${h.fromBank} sees nothing unusual — the money moves on`
+            : `Bank ${h.fromBank}'s own model flags it`}</span>`;
+    requestAnimationFrame(() => w.classList.add("revealed"));
+  }
+  function revealTogether(ev) {
+    const i = ev.hop, h = hops[i], w = $("together" + i);
+    w.style.setProperty("--state", stateVar(ev.action));
+    const why = ev.reason === "upstream_flag"
+      ? `<span class="why flag">Held at the next hop: the money came from a payment already flagged (model score alone p = ${ev.p.toFixed(3)})</span>`
+      : `<span class="why">Model score p = ${ev.p.toFixed(3)}${ev.action === "hold" ? " · expected loss above the cost of a review" : ev.action === "freeze" ? " · above the 95%-precision freeze threshold" : ""}</span>`;
+    const ref = h.togetherAction ? `<span class="ref">experiment, together: <b style="color:${stateVar(h.togetherAction)}">${h.togetherAction}</b></span>` : "";
+    w.querySelector(".verdict").innerHTML = `<span class="pill ${ev.action}">${label[ev.action]}</span>${why}${ref}`;
+    requestAnimationFrame(() => w.classList.add("revealed"));
+  }
+
+  // ---------- dumbbell chart ----------
+  function drawDumbbell() {
+    const s = $("dumbbell");
+    const members = D.results.members.slice().sort((a, b) => a.member - b.member);
+    const rowsD = [{ k: "All banks", alone: summary.aloneF1Mean, lo: summary.aloneF1Min, hi: summary.aloneF1Max, t: summary.togetherF1, all: true }]
+      .concat(members.map((m) => ({ k: `Bank ${BANKS[m.member]}`, letter: BANKS[m.member], alone: m.alone, t: m.together, pos: m.positives })));
+    const W = 720, rowH = 38, top = 26, left = 120, right = 120, H = top + rowsD.length * rowH + 10;
+    const lo = 0.3, hi = 0.75;
+    const x = (v) => left + (W - left - right) * (v - lo) / (hi - lo);
+    let out = "";
+    for (let v = 0.3; v <= 0.751; v += 0.05) {
+      const major = Math.abs((v * 10) % 1) < 1e-6;
+      out += `<line x1="${x(v)}" x2="${x(v)}" y1="${top - 8}" y2="${H - 8}" stroke="var(--line-soft)" ${major ? "" : 'stroke-dasharray="2 4"'}/>`;
+      if (major) out += `<text x="${x(v)}" y="${top - 12}" font-size="10.5" text-anchor="middle" fill="var(--faint)">${v.toFixed(1)}</text>`;
+    }
+    rowsD.forEach((r, i) => {
+      const y = top + i * rowH + rowH / 2;
+      if (r.all) out += `<rect x="0" y="${y - rowH / 2 + 2}" width="${W}" height="${rowH - 4}" rx="6" fill="rgba(94,228,255,.04)"/>`;
+      out += r.letter
+        ? `<rect x="6" y="${y - 5}" width="9" height="9" rx="2" fill="${bankVar(r.letter)}"/><text x="24" y="${y + 4}" font-size="12.5" fill="var(--paper)" font-family="var(--display)">${r.k}</text>`
+        : `<text x="6" y="${y + 4}" font-size="12.5" font-weight="600" fill="var(--paper)" font-family="var(--display)">${r.k}</text>`;
+      if (r.all) out += `<line x1="${x(r.lo)}" x2="${x(r.hi)}" y1="${y}" y2="${y}" stroke="var(--paper-2)" stroke-width="6" stroke-linecap="round" opacity=".25"/>`;
+      out += `<line class="db" x1="${x(r.alone)}" x2="${x(r.t)}" y1="${y}" y2="${y}" stroke="var(--accent)" stroke-opacity=".5" stroke-width="2"/>`;
+      out += `<circle cx="${x(r.alone)}" cy="${y}" r="5.5" fill="var(--ink)" stroke="var(--paper-2)" stroke-width="1.6"/>`;
+      out += `<circle cx="${x(r.t)}" cy="${y}" r="6" fill="var(--accent)"/>`;
+      out += `<text x="${W - right + 14}" y="${y + 4}" font-size="12" fill="var(--paper-2)">${r.alone.toFixed(3)}</text>`;
+      out += `<text x="${W - right + 66}" y="${y + 4}" font-size="12" fill="var(--accent)">${r.t.toFixed(3)}</text>`;
+    });
+    out += `<text x="${W - right + 14}" y="${top - 12}" font-size="10.5" fill="var(--faint)">alone</text><text x="${W - right + 66}" y="${top - 12}" font-size="10.5" fill="var(--faint)">together</text>`;
+    s.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    s.innerHTML = out;
+    $("rangeLegend").innerHTML = `<span style="display:inline-block;width:22px;height:6px;border-radius:3px;background:var(--paper-2);opacity:.3"></span>range across 3 deals (all banks)`;
+  }
+  drawDumbbell();
+
+  // ---------- benchmark table ----------
+  $("bench").querySelector("tbody").innerHTML = D.latency.map((r) => {
+    const ok = r.p99 <= 50;
+    return `<tr><td>${r.speed}× real time</td><td>${fmtInt(r.rate)}</td><td>${fmtMs(r.p50)}</td><td class="${ok ? "ok" : "over"}">${fmtMs(r.p99)}</td><td class="${ok ? "ok" : "over"}">${ok ? "yes" : "no"}</td></tr>`;
+  }).join("");
+
+  // ---------- replay wiring ----------
+  const phase = $("phase");
+  function setPhase(kind, t1, t2) {
+    phase.className = "phase " + kind;
+    $("phaseT1").textContent = t1;
+    $("phaseT2").textContent = t2;
+  }
+  let slipped = 0, stopped = 0;
+  function currentRow(i) { rowEls.forEach((r, k) => r.classList.toggle("current", k === i)); }
+
+  const ff = replay({
+    onEvent(ev, state) {
+      if (ev.type === "stats") {
+        tween($("kRate"), ev.rate, fmtInt);
+        tween($("kP50"), ev.p50, fmtMs);
+        tween($("kP99"), ev.p99, fmtMs);
+        tween($("kScored"), ev.payments, fmtInt);
+        tween($("kHeld"), ev.actions.hold, fmtInt);
+        tween($("kFrozen"), ev.actions.freeze, fmtInt);
+        tween($("kUp"), ev.upstream_holds, fmtInt);
+        tween($("kEsc"), ev.escalations, fmtInt);
+        $("progress").style.width = (100 * ff.progress).toFixed(1) + "%";
+      } else if (ev.type === "skip") {
+        setPhase("skip", `Fast-forward · ${ev.hours.toFixed(1)} h of traffic`,
+          `${fmtInt(ev.payments)} payments loaded into the graph so its windows stay correct — not scored, not shown.`);
+      } else if (ev.type === "live") {
+        const i = hops.findIndex((h) => h.ts === ev.hop_time);
+        setPhase("live", `Live · ${ev.speed}× real time`,
+          `Replaying the minutes before payment ${i + 1} (${shortTs(ev.hop_time)}) through sealed bank clients.`);
+        if (i >= 0) {
+          currentRow(i);
+          const c = $("cursor");
+          c.style.left = pos(hops[i].date) + "%";
+          c.classList.add("show");
+        }
+      } else if (ev.type === "hop") {
+        const i = ev.hop;
+        revealAlone(i);
+        revealTogether(ev);
+        paintSeg(i, ev.action);
+        $("tick" + i).classList.add("done");
+        $("tick" + i).style.background = stateVar(ev.action);
+        if (hops[i].aloneAction === "release") $("slipCount").textContent = ++slipped;
+        if (ev.action !== "release") $("stopCount").textContent = ++stopped;
+      } else if (ev.type === "done") {
+        currentRow(-1);
+        setPhase("done", "Replay finished",
+          `Together: ${stopped} of ${hops.length} payments stopped live. Each bank alone would have let ${slipped} through.`);
+        $("progress").style.width = "100%";
+      }
+    },
+    onEnd() { $("play").textContent = "Play again"; },
+    onReset() {
+      slipped = 0; stopped = 0;
+      $("slipCount").textContent = "0"; $("stopCount").textContent = "0";
+      currentRow(-1);
+      document.querySelectorAll(".wing").forEach((w) => { w.classList.remove("revealed", "slipped"); w.querySelector(".verdict").innerHTML = ""; });
+      segs.forEach((s) => { s.classList.remove("on"); s.setAttribute("stroke", "var(--paper-2)"); });
+      document.querySelectorAll(".timebar .tick").forEach((t) => { t.classList.remove("done"); t.style.background = ""; });
+      $("cursor").classList.remove("show");
+      ["kRate", "kP50", "kP99", "kScored", "kHeld", "kFrozen", "kUp", "kEsc"].forEach((k) => { const e = $(k); e.textContent = "–"; delete e.dataset.v; });
+      $("progress").style.width = "0";
+      setPhase("", "Ready", "Press Play to replay a recorded run of the enclave.");
+    },
+  });
+
+  const playBtn = $("play");
+  playBtn.addEventListener("click", () => {
+    if (ff.playing) { ff.pause(); playBtn.textContent = "Resume"; }
+    else { ff.play(); playBtn.textContent = "Pause"; }
+  });
+  $("restart").addEventListener("click", () => { ff.reset(); playBtn.textContent = "Play"; });
+
+  drawRoute();
+  let rz;
+  window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(drawRoute, 120); });
+})();
+</script>
+</body>
+</html>

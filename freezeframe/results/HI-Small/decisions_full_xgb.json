@@ -1,0 +1,30 @@
+{
+  "together": {
+    "laundering_stopped": 1247,
+    "laundering": 1797,
+    "legit_stopped": 17962,
+    "frozen_laundering": 611,
+    "frozen_legit": 12
+  },
+  "alone_seed0": {
+    "laundering_stopped": 1217,
+    "laundering": 1797,
+    "legit_stopped": 18225,
+    "frozen_laundering": 389,
+    "frozen_legit": 11
+  },
+  "alone_seed1": {
+    "laundering_stopped": 1218,
+    "laundering": 1797,
+    "legit_stopped": 18602,
+    "frozen_laundering": 353,
+    "frozen_legit": 4
+  },
+  "alone_seed2": {
+    "laundering_stopped": 1232,
+    "laundering": 1797,
+    "legit_stopped": 17259,
+    "frozen_laundering": 344,
+    "frozen_legit": 6
+  }
+}

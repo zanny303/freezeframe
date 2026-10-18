@@ -1,0 +1,675 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FreezeFrame · Story × Split</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<style>
+/* Story's stage and type, Split's information structure. */
+:root {
+  --bg: #0a0a0b;
+  --stage: #111113;
+  --raise: #17171a;
+  --line: #242428;
+  --line-soft: #1a1a1d;
+  --faint: #3b3a37;
+  --muted: #8e8a83;
+  --soft: #b9b5ad;
+  --ink: #f3f0ea;
+  /* the one warm accent: "live / current", and it doubles as "held for review" */
+  --accent: #f0a55a;
+  --accent-dim: rgba(240, 165, 90, .14);
+  /* decision states */
+  --release: #7dbd97;
+  --hold: var(--accent);
+  --freeze: #ec6a5b;
+  /* banks: cool and desaturated, never a state hue */
+  --bank-A: #8ea6ff;
+  --bank-B: #b89df0;
+  --bank-C: #62c2d4;
+  --bank-D: #e39dc0;
+  --bank-E: #d3cec3;
+  --serif: "Newsreader", "Iowan Old Style", Georgia, serif;
+  --sans: "Geist", "Helvetica Neue", Helvetica, sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 15px/1.5 var(--sans); -webkit-font-smoothing: antialiased;
+  padding-bottom: 96px; /* room for the console */
+}
+button { font: inherit; color: inherit; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.wrap { max-width: 1480px; margin: 0 auto; padding: 0 48px; }
+.eyebrow { font: 500 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+
+/* ---------- header ---------- */
+header { display: flex; align-items: center; gap: 24px; padding: 24px 0 20px; border-bottom: 1px solid var(--line-soft); }
+.brand { display: flex; align-items: baseline; gap: 14px; min-width: 0; }
+.brand b { font: 500 21px/1 var(--serif); letter-spacing: -.01em; }
+.brand span { color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.spacer { flex: 1; }
+.badges { display: flex; gap: 8px; }
+.badge { font: 11px var(--mono); color: var(--soft); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
+.controls { display: flex; gap: 8px; }
+.btn {
+  border: 1px solid var(--line); background: var(--raise); border-radius: 999px;
+  padding: 8px 18px; font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap;
+  transition: border-color .2s var(--ease), background-color .2s var(--ease);
+}
+.btn:hover { border-color: var(--faint); }
+.btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.btn.primary:hover { background: #fff; }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+kbd { font: 11px var(--mono); color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; margin-left: 6px; }
+.btn.primary kbd { color: #555; border-color: #ccc; }
+
+/* ---------- headline deltas ---------- */
+.deltas { display: grid; grid-template-columns: 1fr 1fr; margin: 34px 0 6px; }
+.delta { padding-right: 40px; }
+.delta + .delta { padding: 0 0 0 40px; border-left: 1px solid var(--line); }
+.delta .v { display: flex; align-items: baseline; gap: 16px; margin-top: 10px; flex-wrap: wrap; }
+.delta .from { font: 400 36px/1 var(--serif); color: var(--muted); }
+.delta .arrow { color: var(--faint); font-size: 24px; }
+.delta .to { font: 400 clamp(52px, 5vw, 70px)/1 var(--serif); letter-spacing: -.02em; }
+.delta .to.accent { color: var(--accent); }
+.delta .cap { display: flex; gap: 22px; margin-top: 8px; font-size: 13px; color: var(--muted); }
+.delta .cap span:first-child { min-width: 140px; }
+.delta small { display: block; color: var(--muted); font-size: 12.5px; margin-top: 10px; }
+.delta small b { color: var(--soft); font-weight: 500; }
+
+/* ---------- route ---------- */
+section.route { margin-top: 38px; }
+.head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.head .note { color: var(--faint); font-size: 12.5px; text-align: right; }
+#chain { width: 100%; height: auto; display: block; max-height: 168px; margin-top: 8px; }
+.edge-base { stroke: var(--line); stroke-width: 1.5; fill: none; }
+.edge-live { fill: none; stroke-width: 2.25; stroke-linecap: round;
+  transition: stroke-dashoffset .45s var(--ease), stroke .3s var(--ease), opacity .3s var(--ease); }
+.node circle { fill: var(--bg); stroke-width: 2; transition: stroke-width .25s var(--ease); }
+.node text { font: 500 13px var(--mono); fill: var(--ink); text-anchor: middle; dominant-baseline: central; }
+.node .tag { font: 11px var(--mono); fill: var(--muted); }
+.node.active circle { stroke-width: 3.5; }
+.hopno { font: 11px var(--mono); fill: var(--faint); text-anchor: middle; transition: fill .25s var(--ease); }
+.hopno.on { fill: var(--soft); }
+
+.timebar { position: relative; height: 34px; margin: 4px 0 0; }
+.timebar .axis { position: absolute; left: 0; right: 0; top: 12px; height: 1px; background: var(--line); }
+.timebar .tick { position: absolute; top: 7px; width: 2px; height: 11px; border-radius: 1px; background: var(--faint);
+  transform: translateX(-1px); transition: background-color .35s var(--ease); }
+.timebar .day { position: absolute; top: 18px; font: 10.5px var(--mono); color: var(--faint); transform: translateX(-50%); white-space: nowrap; }
+.timebar .cursor { position: absolute; top: 3px; width: 2px; height: 19px; background: var(--accent); border-radius: 1px;
+  box-shadow: 0 0 0 4px var(--accent-dim); opacity: 0; transform: translateX(-1px);
+  transition: left .7s var(--ease), opacity .3s var(--ease); }
+.timebar .cursor.show { opacity: 1; }
+.timebar .cursor.ff { transition: left 1.4s cubic-bezier(.45, 0, .2, 1), opacity .3s var(--ease); }
+
+/* ---------- the split ---------- */
+section.split { margin-top: 34px; }
+.cols, .hoprow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(380px, 440px) minmax(0, 1fr); }
+.cols { padding-bottom: 14px; border-bottom: 1px solid var(--line); align-items: end; }
+.colhead { padding: 0 24px; }
+.colhead.left { text-align: right; }
+.colhead.mid { text-align: center; }
+.colhead h3 { margin: 6px 0 0; font: 400 26px/1.1 var(--serif); letter-spacing: -.01em; }
+.colhead p { margin: 4px 0 0; color: var(--muted); font-size: 12.5px; }
+.colhead .count { font: 13px var(--mono); color: var(--soft); margin-top: 10px; }
+.colhead .count b { font-weight: 500; color: var(--ink); }
+
+.hoprow { border-bottom: 1px solid var(--line-soft); min-height: 82px; transition: background-color .35s var(--ease); }
+.hoprow.current, .hoprow.focus { background: var(--stage); }
+.spine { position: relative; display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 14px; padding: 14px 20px;
+  border-left: 1px solid var(--line-soft); border-right: 1px solid var(--line-soft); }
+.spine::before { content: ""; position: absolute; left: -1px; top: 0; bottom: 0; width: 2px; background: var(--accent);
+  transform: scaleY(0); transition: transform .4s var(--ease); }
+.hoprow.current .spine::before { transform: scaleY(1); }
+.hoprow.focus .spine::before { transform: scaleY(1); background: var(--soft); }
+.spine .n { font: 400 24px/1 var(--serif); color: var(--muted); text-align: center; transition: color .3s var(--ease); }
+.hoprow.current .spine .n, .hoprow.decided .spine .n { color: var(--ink); }
+.who { display: flex; align-items: center; gap: 9px; font-size: 14px; white-space: nowrap; }
+.chip { display: inline-flex; align-items: center; gap: 6px; }
+.chip i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.chip .acct { font: 12px var(--mono); color: var(--muted); }
+.who .to-arrow { color: var(--faint); }
+.when { font: 11.5px var(--mono); color: var(--muted); margin-top: 4px; }
+.amt { font: 14px var(--mono); text-align: right; }
+.amt small { display: block; font-size: 10.5px; color: var(--faint); }
+
+.wing { position: relative; display: flex; align-items: center; padding: 0 24px; overflow: hidden; }
+.wing.left { justify-content: flex-end; }
+.wing .ghost { font: 12px var(--mono); color: var(--faint); transition: opacity .25s var(--ease); }
+.wing.revealed .ghost { opacity: 0; position: absolute; }
+
+/* the payment's path out of the spine: stops at a bar (held) or runs off the edge (released) */
+.path { position: absolute; top: 50%; height: 0; transform: scaleX(0); transition: transform .52s var(--ease); }
+.wing.left .path { right: 0; transform-origin: right center; }
+.wing.right .path { left: 0; transform-origin: left center; }
+.wing.revealed .path { transform: scaleX(1); }
+.path.stop { width: 64px; border-top: 1.5px solid var(--state); }
+.wing.left .path.stop::after, .wing.right .path.stop::after { content: ""; position: absolute; top: -8px; width: 1.5px; height: 15px; background: var(--state); }
+.wing.left .path.stop::after { left: 0; }
+.wing.right .path.stop::after { right: 0; }
+.path.slip { left: 0 !important; right: 0; border-top: 1.5px dashed var(--release);
+  -webkit-mask-image: linear-gradient(to left, #000 30%, rgba(0, 0, 0, .2) 100%);
+          mask-image: linear-gradient(to left, #000 30%, rgba(0, 0, 0, .2) 100%); }
+.path.slip::before { content: ""; position: absolute; left: 4px; top: -5px; border-top: 4.5px solid transparent;
+  border-bottom: 4.5px solid transparent; border-right: 7px solid var(--release); }
+
+.verdict { position: relative; z-index: 1; display: grid; gap: 3px; max-width: 360px;
+  opacity: 0; transform: translateY(6px); transition: opacity .32s var(--ease) .16s, transform .32s var(--ease) .16s; }
+.wing.left .verdict { text-align: right; justify-items: end; margin-right: 80px; }
+.wing.left.slipped .verdict { margin-right: 18px; background: var(--bg); padding: 2px 0 2px 12px; }
+.hoprow.current .wing.left.slipped .verdict, .hoprow.focus .wing.left.slipped .verdict { background: var(--stage); }
+.wing.right .verdict { margin-left: 80px; }
+.wing.revealed .verdict { opacity: 1; transform: none; }
+.state { font: 400 21px/1.15 var(--serif); letter-spacing: -.01em; color: var(--state); }
+.why { font-size: 12.5px; color: var(--soft); }
+.why .mono { color: var(--ink); }
+.why.flag { color: var(--ink); }
+.ref { font: 11px var(--mono); color: var(--faint); }
+
+/* fast-forward gap: sits between the two hops it separates */
+.gap { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .45s var(--ease); }
+.gap > div { overflow: hidden; }
+.gap.show { grid-template-rows: 1fr; }
+.gap .inner { display: flex; align-items: center; gap: 14px; justify-content: center; padding: 9px 0;
+  font: 11.5px var(--mono); color: var(--muted); border-bottom: 1px solid var(--line-soft);
+  opacity: 0; transition: opacity .3s var(--ease) .15s; }
+.gap.show .inner { opacity: 1; }
+.gap .rule { flex: 1; max-width: 220px; height: 0; border-top: 1px dashed var(--faint); }
+.gap b { color: var(--soft); font-weight: 500; }
+
+/* ---------- lower panels ---------- */
+.lower { display: grid; grid-template-columns: 1.3fr 1fr; gap: 56px; margin-top: 48px; }
+.panel { border-top: 1px solid var(--line); padding-top: 16px; }
+.panel h2 { margin: 6px 0 0; font: 400 24px var(--serif); letter-spacing: -.01em; }
+#dumbbell { display: block; width: 100%; height: auto; margin-top: 14px; }
+#dumbbell text { font-family: var(--mono); }
+.legend { display: flex; gap: 18px; font-size: 12px; color: var(--muted); margin-top: 8px; flex-wrap: wrap; }
+.legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+table.bench { width: 100%; border-collapse: collapse; margin-top: 14px; font: 12.5px var(--mono); }
+table.bench th { text-align: right; color: var(--muted); font-weight: 400; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+table.bench td { text-align: right; padding: 8px; border-bottom: 1px solid var(--line-soft); color: var(--soft); }
+table.bench th:first-child, table.bench td:first-child { text-align: left; }
+table.bench td.ok { color: var(--ink); }
+table.bench td.over { color: var(--faint); }
+.panel .foot { color: var(--muted); font-size: 12px; margin-top: 12px; }
+
+/* ---------- console ---------- */
+.console { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+  background: rgba(10, 10, 11, .9); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border-top: 1px solid var(--line); }
+.progress { position: absolute; left: 0; top: -1px; height: 1.5px; background: var(--accent); width: 0; transition: width .5s linear; }
+.console .inner { display: grid; grid-template-columns: minmax(260px, 1fr) 2.6fr; gap: 28px; align-items: center;
+  max-width: 1480px; margin: 0 auto; padding: 14px 48px 16px; }
+.phase { display: flex; align-items: flex-start; gap: 10px; min-width: 0; }
+.phase i { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--faint); margin-top: 6px; transition: background-color .3s var(--ease); }
+.phase.live i { background: var(--accent); animation: pulse 2s ease-out infinite; }
+.phase.skip i { background: var(--soft); }
+.phase.done i { background: var(--release); }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(240, 165, 90, .45); } 70% { box-shadow: 0 0 0 8px rgba(240, 165, 90, 0); } 100% { box-shadow: 0 0 0 0 rgba(240, 165, 90, 0); } }
+.phase .t1 { font-size: 13.5px; font-weight: 500; }
+.phase .t2 { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.kpis { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); }
+.kpi { padding: 0 14px; border-left: 1px solid var(--line-soft); }
+.kpi .v { font: 400 18px/1.15 var(--mono); white-space: nowrap; }
+.kpi .k { font-size: 11.5px; color: var(--muted); margin-top: 3px; line-height: 1.25; }
+.kpi.hold .v { color: var(--hold); }
+.kpi.freeze .v { color: var(--freeze); }
+.hint { text-align: center; font-size: 12px; color: var(--faint); margin: 36px 0 0; }
+
+/* ---------- responsive ---------- */
+@media (max-width: 1280px) {
+  .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); row-gap: 10px; }
+  .console .inner { grid-template-columns: 1fr; gap: 12px; }
+  body { padding-bottom: 170px; }
+  .badges { display: none; }
+}
+@media (max-width: 1100px) {
+  .wrap, .console .inner { padding-left: 20px; padding-right: 20px; }
+  .deltas, .lower { grid-template-columns: 1fr; gap: 28px; }
+  .delta + .delta { padding: 24px 0 0; border-left: 0; border-top: 1px solid var(--line); }
+  .cols { display: none; }
+  .hoprow { grid-template-columns: 1fr 1fr; grid-template-areas: "spine spine" "alone together"; padding-bottom: 12px; }
+  .hoprow .spine { grid-area: spine; border: 0; }
+  .wing.left { grid-area: alone; justify-content: flex-start; min-height: 70px; }
+  .wing.right { grid-area: together; min-height: 70px; }
+  .wing .path { display: none; }
+  .wing.left .verdict { text-align: left; justify-items: start; margin: 18px 0 0; background: none !important; padding: 0 !important; }
+  .wing.right .verdict { margin: 18px 0 0; }
+  .wing .ghost { margin-top: 18px; }
+  .wing.left::before { content: "Alone"; position: absolute; top: 4px; left: 24px; font: 11px var(--mono); color: var(--muted); }
+  .wing.right::before { content: "Together"; position: absolute; top: 4px; left: 24px; font: 11px var(--mono); color: var(--accent); }
+  header { flex-wrap: wrap; }
+}
+@media (max-width: 640px) {
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  body { padding-bottom: 300px; }
+  .spine { grid-template-columns: 28px 1fr; }
+  .spine .amt { grid-column: 2; text-align: left; }
+  .brand span { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><b>FreezeFrame</b><span id="subtitle"></span></div>
+    <div class="spacer"></div>
+    <div class="badges" id="badges"></div>
+    <div class="controls">
+      <button class="btn primary" id="playBtn"><span>Play</span><kbd>Space</kbd></button>
+      <button class="btn" id="restartBtn">Restart<kbd>R</kbd></button>
+    </div>
+  </header>
+
+  <section class="deltas" aria-label="Headline results on the test split">
+    <div class="delta">
+      <div class="eyebrow">Laundering caught · minority-class F1</div>
+      <div class="v"><span class="from" id="f1From"></span><span class="arrow">→</span><span class="to" id="f1To"></span></div>
+      <div class="cap"><span>each bank alone</span><span>together, in the enclave</span></div>
+      <small id="f1Fine"></small>
+    </div>
+    <div class="delta">
+      <div class="eyebrow">Laundering payments frozen automatically</div>
+      <div class="v"><span class="from" id="frFrom"></span><span class="arrow">→</span><span class="to accent" id="frTo"></span></div>
+      <div class="cap"><span>each bank alone</span><span id="frCap"></span></div>
+      <small id="frFine"></small>
+    </div>
+  </section>
+
+  <section class="route" aria-label="The money's route">
+    <div class="head">
+      <div class="eyebrow">The money's route</div>
+      <span class="note">accounts in the order the money moved · ring colour = bank · the last payment returns to the first account</span>
+    </div>
+    <svg id="chain" viewBox="0 0 1000 156" role="img" aria-label="The eight payments in hop order; the last returns to the first account"></svg>
+    <div class="timebar" id="timebar" aria-hidden="true"><div class="axis"></div><div class="cursor" id="cursor"></div></div>
+  </section>
+
+  <section class="split" aria-label="Each payment, a bank alone versus together">
+    <div class="cols">
+      <div class="colhead left">
+        <div class="eyebrow">Experiment · seed 0</div>
+        <h3>Each bank alone</h3>
+        <p>What the paying bank decides with only its own view</p>
+        <div class="count">let through <b id="slipCount">0</b> of 8</div>
+      </div>
+      <div class="colhead mid">
+        <div class="eyebrow">In the order it happened</div>
+        <h3>The payment</h3>
+        <p>&nbsp;</p>
+        <div class="count">&nbsp;</div>
+      </div>
+      <div class="colhead right">
+        <div class="eyebrow">Live · streaming hot path</div>
+        <h3>Together, in the enclave</h3>
+        <p>The decision as it arrives, sent only to the paying bank</p>
+        <div class="count">stopped <b id="stopCount">0</b> of 8</div>
+      </div>
+    </div>
+    <div id="rows"></div>
+  </section>
+
+  <section class="lower">
+    <div class="panel">
+      <div class="eyebrow">Test split · banks dealt at random (seed 0)</div>
+      <h2>F1 by bank, alone and together</h2>
+      <svg id="dumbbell" role="img" aria-label="F1 per bank, alone versus together"></svg>
+      <div class="legend">
+        <span><i style="border:1.5px solid var(--muted)"></i>bank alone</span>
+        <span><i style="background:var(--ink)"></i>together in the enclave</span>
+        <span><i style="background:var(--accent)"></i>lift</span>
+        <span id="rangeLegend"></span>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="eyebrow">Dev laptop · not LinuxONE</div>
+      <h2>Streaming benchmark</h2>
+      <table class="bench" id="bench">
+        <thead><tr><th>Speed</th><th>Payments / s</th><th>p50</th><th>p99</th><th>Within 50 ms</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="foot">From a payment's scheduled arrival to its published decision; warm tier in its own process.</div>
+    </div>
+  </section>
+  <p class="hint">Space play / pause · R restart · ← → step through decided payments · Esc back to live</p>
+</div>
+
+<div class="console" role="region" aria-label="Replay status and live enclave metrics">
+  <div class="progress" id="progress"></div>
+  <div class="inner">
+    <div class="phase" id="phase" aria-live="polite"><i></i>
+      <div><div class="t1" id="phaseT1">Ready</div><div class="t2" id="phaseT2">Press Play to replay a recorded run of the enclave.</div></div>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><div class="v" id="kRate">–</div><div class="k">payments / s</div></div>
+      <div class="kpi"><div class="v" id="kP50">–</div><div class="k">p50 decision latency</div></div>
+      <div class="kpi"><div class="v" id="kP99">–</div><div class="k">p99 decision latency</div></div>
+      <div class="kpi"><div class="v" id="kScored">–</div><div class="k">payments scored live</div></div>
+      <div class="kpi hold"><div class="v" id="kHeld">–</div><div class="k">held for review</div></div>
+      <div class="kpi freeze"><div class="v" id="kFrozen">–</div><div class="k">freeze requests</div></div>
+      <div class="kpi"><div class="v" id="kNext">–</div><div class="k">held at next hop</div></div>
+      <div class="kpi"><div class="v" id="kEsc">–</div><div class="k">warm-tier escalations</div></div>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="sim.js"></script>
+<script>
+(function () {
+  const { D, BANKS, hops, summary, replay, tween, fmtUsd, fmtMs, fmtInt } = window.FF;
+  const $ = (id) => document.getElementById(id);
+  const N = hops.length;
+  const REVIEW_COST = 100;   // freezeframe/config.py REVIEW_COST_USD
+  const bankVar = (L) => `var(--bank-${L})`;
+  const stateVar = (a) => `var(--${a})`;
+  const f3 = (v) => v.toFixed(3);
+  const STATE_WORD = { release: "Released", hold: "Held for review", freeze: "Freeze requested" };
+  const dayFmt = new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short" });
+  const timeFmt = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit" });
+  const when = (h) => `${dayFmt.format(h.date)} · ${timeFmt.format(h.date)}`;
+  const smooth = FF.reduced ? "auto" : "smooth";
+
+  // ---------- static content ----------
+  const nBanks = new Set(hops.flatMap((h) => [h.fromBank, h.toBank])).size;
+  $("subtitle").textContent = `A real ${D.chain.pattern.toLowerCase()} laundering attempt from the test split · ${N} payments · ${nBanks} banks · ${D.chain.span_hours.toFixed(1)} h`;
+  const tree = D.chain.tree_format === "zdnn_tensors" ? "IBM Z AI accelerator" : "CPU";
+  $("badges").innerHTML = `<span class="badge">enclave: ${D.chain.attestation}</span><span class="badge">scoring: ${tree}</span>`;
+
+  $("f1From").textContent = f3(summary.aloneF1Mean);
+  $("f1To").textContent = f3(summary.togetherF1);
+  $("f1Fine").innerHTML = `Alone is the mean of three random deals of banks to five members (<b>${f3(summary.aloneF1Min)}–${f3(summary.aloneF1Max)}</b>). Published GFP + XGBoost baseline: 0.632.`;
+  $("frFrom").textContent = `${summary.frozenAloneMin}–${summary.frozenAloneMax}`;
+  $("frTo").textContent = fmtInt(summary.frozenTogether);
+  $("frCap").textContent = `together · of ${fmtInt(summary.laundering)} laundering payments`;
+  $("frFine").innerHTML = `Freezes need 95% precision on the tune split. Together, <b>${summary.legitFrozen} legitimate payments</b> were frozen in the whole test split.`;
+
+  // ---------- route (Story's chain path) ----------
+  // Hop i runs from account i to account i+1; the last hop returns to account 0 underneath,
+  // so the cycle closes without an arrow across the diagram.
+  const X0 = 50, X1 = 950, Y = 58, R = 19;
+  const nx = (j) => X0 + j * (X1 - X0) / (N - 1);
+  function buildChain() {
+    let s = `<defs>${["release", "hold", "freeze", "soft"].map((k) =>
+      `<marker id="m-${k}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="var(--${k})"/></marker>`).join("")}</defs>`;
+    hops.forEach((h, i) => {
+      const d = i < N - 1
+        ? `M${nx(i) + R + 4},${Y} L${nx(i + 1) - R - 6},${Y}`
+        : `M${nx(N - 1)},${Y + R + 22} C${nx(N - 1)},${Y + 92} ${nx(0)},${Y + 92} ${nx(0)},${Y + R + 24}`;
+      s += `<path class="edge-base" d="${d}"/><path class="edge-live" id="e${i}" d="${d}" opacity="0"/>`;
+      const lx = i < N - 1 ? (nx(i) + nx(i + 1)) / 2 : (nx(0) + nx(N - 1)) / 2;
+      const ly = i < N - 1 ? Y - 12 : Y + 86;
+      s += `<text class="hopno" id="hn${i}" x="${lx}" y="${ly}">${i < N - 1 ? i + 1 : `${N} · back to ${hops[0].from}`}</text>`;
+    });
+    hops.forEach((h, j) => {
+      s += `<g class="node" id="n${j}"><circle cx="${nx(j)}" cy="${Y}" r="${R}" stroke="${bankVar(h.fromBank)}"/>` +
+           `<text x="${nx(j)}" y="${Y}">${h.fromBank}</text>` +
+           `<text class="tag" x="${nx(j)}" y="${Y + R + 13}">${h.from}</text></g>`;
+    });
+    $("chain").innerHTML = s;
+    hops.forEach((_, i) => {
+      const e = $("e" + i), L = e.getTotalLength ? e.getTotalLength() : 200;
+      e.style.strokeDasharray = L; e.style.strokeDashoffset = L; e.dataset.len = L;
+    });
+  }
+
+  // ---------- time bar ----------
+  const t0 = hops[0].date.getTime(), t1 = hops[N - 1].date.getTime();
+  const pos = (ms) => 1.5 + 97 * ((ms - t0) / Math.max(1, t1 - t0));
+  const timebar = $("timebar");
+  hops.forEach((h, i) => {
+    const tk = document.createElement("div");
+    tk.className = "tick"; tk.id = "tick" + i; tk.style.left = pos(h.date.getTime()) + "%";
+    tk.title = `payment ${i + 1} · ${when(h)}`;
+    timebar.appendChild(tk);
+  });
+  [...new Set(hops.map((h) => h.ts.slice(0, 10)))].forEach((d) => {
+    const mid = new Date(d + "T12:00:00").getTime();
+    if (mid < t0 - 6 * 36e5 || mid > t1 + 6 * 36e5) return;
+    const lab = document.createElement("div");
+    lab.className = "day"; lab.style.left = Math.min(97, Math.max(3, pos(mid))) + "%";
+    lab.textContent = dayFmt.format(new Date(d + "T12:00:00"));
+    timebar.appendChild(lab);
+  });
+
+  // ---------- rows (Split's structure) ----------
+  const rowsEl = $("rows");
+  const rowEls = [], gapEls = [];
+  hops.forEach((h, i) => {
+    const g = document.createElement("div");
+    g.className = "gap"; g.innerHTML = `<div><div class="inner"></div></div>`;
+    rowsEl.appendChild(g); gapEls.push(g);
+    const r = document.createElement("div");
+    r.className = "hoprow"; r.id = "row" + i;
+    r.innerHTML = `
+      <div class="wing left" id="alone${i}"><span class="ghost">payment ${i + 1} not yet sent</span><div class="path"></div><div class="verdict"></div></div>
+      <div class="spine">
+        <div class="n">${i + 1}</div>
+        <div>
+          <div class="who">
+            <span class="chip"><i style="background:${bankVar(h.fromBank)}"></i>Bank ${h.fromBank} <span class="acct">${h.from}</span></span>
+            <span class="to-arrow">→</span>
+            <span class="chip"><i style="background:${bankVar(h.toBank)}"></i>Bank ${h.toBank} <span class="acct">${h.to}</span></span>
+          </div>
+          <div class="when">${when(h)} · ${h.fmt}</div>
+        </div>
+        <div class="amt">${fmtUsd(h.amount_usd)}<small>${h.currency}</small></div>
+      </div>
+      <div class="wing right" id="together${i}"><span class="ghost">awaiting live decision</span><div class="path"></div><div class="verdict"></div></div>`;
+    rowsEl.appendChild(r); rowEls.push(r);
+  });
+
+  function revealAlone(i) {
+    const h = hops[i], w = $("alone" + i), a = h.aloneAction, path = w.querySelector(".path");
+    if (!a) { w.querySelector(".verdict").innerHTML = `<span class="ref">no experiment score for this payment</span>`; w.classList.add("revealed"); return; }
+    path.className = "path " + (a === "release" ? "slip" : "stop");
+    w.style.setProperty("--state", stateVar(a));
+    w.classList.toggle("slipped", a === "release");
+    w.querySelector(".verdict").innerHTML = `<div class="state">${STATE_WORD[a]}</div>
+      <div class="why">${a === "release" ? `Bank ${h.fromBank} sees nothing unusual. The money moves on.` : `Bank ${h.fromBank}'s own model flags it.`}</div>`;
+    requestAnimationFrame(() => requestAnimationFrame(() => w.classList.add("revealed")));
+  }
+  function reasonText(h, d) {
+    if (d.reason === "upstream_flag")
+      return `<div class="why flag">Held at the next hop: the money came from a payment already flagged. Its own score was low (<span class="mono">p = ${d.p.toFixed(3)}</span>).</div>`;
+    if (d.action === "freeze")
+      return `<div class="why"><span class="mono">p = ${d.p.toFixed(3)}</span> clears the 95%-precision freeze threshold; the receiving bank is asked to freeze.</div>`;
+    if (d.action === "hold")
+      return `<div class="why"><span class="mono">p = ${d.p.toFixed(3)}</span> · expected loss <span class="mono">${fmtUsd(d.p * h.amount_usd)}</span> is above the ${fmtUsd(REVIEW_COST)} cost of a review.</div>`;
+    return `<div class="why"><span class="mono">p = ${d.p.toFixed(3)}</span> · expected loss below the ${fmtUsd(REVIEW_COST)} review cost.</div>`;
+  }
+  function revealTogether(ev) {
+    const h = hops[ev.hop], w = $("together" + ev.hop);
+    w.querySelector(".path").className = "path stop";
+    w.style.setProperty("--state", stateVar(ev.action));
+    const ref = h.togetherAction ? `<span class="ref">experiment, together: ${h.togetherAction}</span>` : "";
+    w.querySelector(".verdict").innerHTML = `<div class="state">${STATE_WORD[ev.action]}</div>${reasonText(h, ev)}${ref}`;
+    requestAnimationFrame(() => requestAnimationFrame(() => w.classList.add("revealed")));
+  }
+
+  // ---------- dumbbell (Story's chart) ----------
+  function drawDumbbell() {
+    const svg = $("dumbbell");
+    const rows = [{ k: "All banks", a: summary.aloneF1Mean, lo: summary.aloneF1Min, hi: summary.aloneF1Max, t: summary.togetherF1, all: true }]
+      .concat(D.results.members.slice().sort((a, b) => a.member - b.member)
+        .map((m) => ({ k: `Bank ${BANKS[m.member]}`, L: BANKS[m.member], a: m.alone, t: m.together })));
+    const W = 640, L = 104, Rr = 548, top = 26, rowH = 38, lo = 0.3, hi = 0.75;
+    const H = top + rows.length * rowH + 30;
+    const x = (v) => L + (v - lo) / (hi - lo) * (Rr - L);
+    let s = "";
+    [0.3, 0.4, 0.5, 0.6, 0.7].forEach((v) => {
+      s += `<line x1="${x(v)}" x2="${x(v)}" y1="${top - 6}" y2="${top + rows.length * rowH}" stroke="var(--line-soft)"/>`;
+      s += `<text x="${x(v)}" y="${top - 12}" font-size="10.5" text-anchor="middle" fill="var(--faint)">${v.toFixed(1)}</text>`;
+    });
+    rows.forEach((r, i) => {
+      const y = top + i * rowH + rowH / 2;
+      if (r.all) s += `<line x1="${x(r.lo)}" x2="${x(r.hi)}" y1="${y}" y2="${y}" stroke="var(--soft)" stroke-width="6" stroke-linecap="round" opacity=".18"/>`;
+      s += r.L
+        ? `<circle cx="6" cy="${y}" r="4" fill="${bankVar(r.L)}"/><text x="18" y="${y + 4}" font-size="12.5" fill="var(--soft)" style="font-family:var(--sans)">${r.k}</text>`
+        : `<text x="0" y="${y + 4}" font-size="12.5" fill="var(--ink)" style="font-family:var(--sans);font-weight:500">${r.k}</text>`;
+      s += `<line class="din" x1="${x(r.a)}" x2="${x(r.t)}" y1="${y}" y2="${y}" stroke="var(--faint)" stroke-width="2" style="opacity:0;transition:opacity .4s var(--ease) ${120 + i * 60}ms"/>`;
+      s += `<circle cx="${x(r.a)}" cy="${y}" r="5.5" fill="var(--bg)" stroke="var(--muted)" stroke-width="1.5"/>`;
+      s += `<circle class="din" cx="${x(r.t)}" cy="${y}" r="6" fill="var(--ink)" style="opacity:0;transition:opacity .4s var(--ease) ${160 + i * 60}ms"/>`;
+      s += `<text class="din" x="${Rr + 18}" y="${y + 4}" font-size="12" fill="var(--accent)" style="opacity:0;transition:opacity .4s var(--ease) ${200 + i * 60}ms">+${(r.t - r.a).toFixed(3)}</text>`;
+    });
+    s += `<text x="${Rr}" y="${H - 6}" font-size="10.5" text-anchor="end" fill="var(--faint)">minority-class F1</text>`;
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    svg.innerHTML = s;
+    $("rangeLegend").innerHTML = `<i style="width:20px;border-radius:3px;background:var(--soft);opacity:.3;height:6px;vertical-align:1px"></i>all banks, range across 3 deals`;
+    const io = "IntersectionObserver" in window ? new IntersectionObserver((es) => {
+      if (es.some((e) => e.isIntersecting)) { svg.querySelectorAll(".din").forEach((el) => (el.style.opacity = 1)); io.disconnect(); }
+    }, { threshold: 0.3 }) : null;
+    if (io) io.observe(svg); else svg.querySelectorAll(".din").forEach((el) => (el.style.opacity = 1));
+  }
+
+  $("bench").querySelector("tbody").innerHTML = D.latency.map((r) => {
+    const ok = r.p99 <= 50;
+    return `<tr><td>${r.speed}× real time</td><td>${fmtInt(r.rate)}</td><td>${fmtMs(r.p50)}</td><td class="${ok ? "ok" : "over"}">${fmtMs(r.p99)}</td><td class="${ok ? "ok" : "over"}">${ok ? "yes" : "no"}</td></tr>`;
+  }).join("");
+
+  // ---------- state + painting ----------
+  const st = { current: null, decided: {}, focus: null, slipped: 0, stopped: 0, nextGap: 0, done: false };
+
+  function paint() {
+    const shown = st.focus ?? st.current;
+    rowEls.forEach((r, i) => {
+      r.classList.toggle("current", i === st.current && st.focus == null);
+      r.classList.toggle("focus", i === st.focus);
+      r.classList.toggle("decided", !!st.decided[i]);
+    });
+    hops.forEach((h, i) => {
+      const e = $("e" + i), d = st.decided[i], on = d || i === st.current, key = d ? d.action : "soft";
+      e.style.stroke = `var(--${key})`;
+      e.setAttribute("marker-end", on ? `url(#m-${key})` : "");
+      e.setAttribute("opacity", on ? (d ? 1 : .5) : 0);
+      e.style.strokeDashoffset = on ? 0 : e.dataset.len;
+      $("hn" + i).classList.toggle("on", !!on);
+      $("tick" + i).style.background = d ? stateVar(d.action) : "";
+    });
+    hops.forEach((_, j) => $("n" + j).classList.toggle("active", shown != null && (j === shown || j === (shown + 1) % N)));
+  }
+
+  function setPhase(kind, t1, t2) {
+    $("phase").className = "phase " + kind;
+    $("phaseT1").textContent = t1; $("phaseT2").textContent = t2;
+  }
+  function moveCursor(ms, fastForward) {
+    const c = $("cursor");
+    c.classList.toggle("ff", !!fastForward);
+    c.style.left = pos(ms) + "%";
+    c.classList.add("show");
+  }
+  function scrollToRow(i, block = "nearest") {
+    const r = rowEls[i];
+    if (!r) return;
+    const rect = r.getBoundingClientRect(), bottom = window.innerHeight - 110;
+    if (rect.top < 70 || rect.bottom > bottom) r.scrollIntoView({ block, behavior: smooth });
+  }
+
+  const KPI = { kRate: ["rate", fmtInt], kP50: ["p50", fmtMs], kP99: ["p99", fmtMs], kScored: ["payments", fmtInt],
+                kNext: ["upstream_holds", fmtInt], kEsc: ["escalations", fmtInt] };
+
+  // ---------- replay ----------
+  const hopIndexByTs = Object.fromEntries(hops.map((h, i) => [h.ts, i]));
+  const player = replay({
+    onEvent(ev) {
+      if (ev.type === "stats") {
+        for (const [id, [k, f]] of Object.entries(KPI)) tween($(id), ev[k], f);
+        tween($("kHeld"), ev.actions.hold, fmtInt);
+        tween($("kFrozen"), ev.actions.freeze, fmtInt);
+        $("progress").style.width = (100 * player.progress).toFixed(1) + "%";
+        return;
+      }
+      if (ev.type === "skip") {
+        const g = gapEls[Math.min(st.nextGap, N - 1)];
+        g.querySelector(".inner").innerHTML = `<span class="rule"></span><span><b>${ev.hours.toFixed(1)} h</b> fast-forwarded · ${fmtInt(ev.payments)} payments loaded into the graph, not scored or shown</span><span class="rule"></span>`;
+        requestAnimationFrame(() => g.classList.add("show"));
+        const prev = st.nextGap > 0 ? hops[st.nextGap - 1].date.getTime() : t0;
+        const next = hops[Math.min(st.nextGap, N - 1)].date.getTime();
+        moveCursor(prev + (next - prev) * 0.85, true);
+        setPhase("skip", `Fast-forward · ${ev.hours.toFixed(1)} h of traffic`,
+          `${fmtInt(ev.payments)} payments loaded into the graph so its windows stay correct. Not scored, not shown.`);
+      } else if (ev.type === "live") {
+        const i = hopIndexByTs[ev.hop_time];
+        if (i != null) {
+          st.current = i; st.nextGap = i + 1;
+          moveCursor(hops[i].date.getTime(), false);
+          if (st.focus == null) scrollToRow(i);
+          setPhase("live", `Live · ${ev.speed}× real time`,
+            `The minutes before payment ${i + 1} (Bank ${hops[i].fromBank} → Bank ${hops[i].toBank}), through sealed bank clients.`);
+        }
+        paint();
+      } else if (ev.type === "hop") {
+        st.decided[ev.hop] = ev;
+        revealAlone(ev.hop); revealTogether(ev);
+        if (hops[ev.hop].aloneAction === "release") tween($("slipCount"), ++st.slipped, fmtInt, 300);
+        if (ev.action !== "release") tween($("stopCount"), ++st.stopped, fmtInt, 300);
+        paint();
+      } else if (ev.type === "done") {
+        st.done = true; st.current = null; paint();
+        $("progress").style.width = "100%";
+        setPhase("done", "Replay complete",
+          `Together, ${st.stopped} of ${N} payments were stopped live. Each bank alone would have let ${st.slipped} through.`);
+      }
+    },
+    onReset() {
+      Object.assign(st, { current: null, decided: {}, focus: null, slipped: 0, stopped: 0, nextGap: 0, done: false });
+      ["slipCount", "stopCount"].forEach((id) => { const el = $(id); delete el.dataset.v; el.textContent = "0"; });
+      document.querySelectorAll(".wing").forEach((w) => { w.classList.remove("revealed", "slipped"); w.querySelector(".verdict").innerHTML = ""; w.querySelector(".path").className = "path"; });
+      gapEls.forEach((g) => g.classList.remove("show"));
+      $("cursor").classList.remove("show");
+      [...Object.keys(KPI), "kHeld", "kFrozen"].forEach((id) => { const el = $(id); delete el.dataset.v; el.textContent = "–"; });
+      $("progress").style.width = "0";
+      setPhase("", "Ready", "Press Play to replay a recorded run of the enclave.");
+      paint(); syncButton();
+      window.scrollTo({ top: 0, behavior: smooth });
+    },
+    onEnd() { syncButton(); },
+  });
+
+  function syncButton() {
+    $("playBtn").firstChild.textContent = player.playing ? "Pause" : (st.done ? "Replay" : (player.progress > 0 ? "Resume" : "Play"));
+  }
+  function toggle() {
+    if (player.playing) player.pause();
+    else { if (st.done) player.reset(); player.play(); }
+    syncButton();
+  }
+  $("playBtn").addEventListener("click", toggle);
+  $("restartBtn").addEventListener("click", () => player.reset());
+
+  document.addEventListener("keydown", (e) => {
+    if (e.code === "Space") { e.preventDefault(); toggle(); }
+    else if (e.key === "r" || e.key === "R") player.reset();
+    else if (e.key === "Escape") { st.focus = null; paint(); if (st.current != null) scrollToRow(st.current, "center"); }
+    else if (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "ArrowUp" || e.key === "ArrowDown") {
+      const list = Object.keys(st.decided).map(Number).sort((a, b) => a - b);
+      if (!list.length) return;
+      e.preventDefault();
+      const back = e.key === "ArrowLeft" || e.key === "ArrowUp";
+      const cur = st.focus ?? (back ? N : -1);
+      const next = back ? [...list].reverse().find((v) => v < cur) : list.find((v) => v > cur);
+      if (next == null) { if (!back) { st.focus = null; paint(); } return; }
+      st.focus = next; paint(); scrollToRow(next, "center");
+    }
+  });
+
+  buildChain();
+  drawDumbbell();
+  paint();
+})();
+</script>
+</body>
+</html>

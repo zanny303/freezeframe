@@ -1,0 +1,609 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FreezeFrame · Presenter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0b;
+  --stage: #111113;
+  --raise: #17171a;
+  --line: #242428;
+  --faint: #3b3a37;
+  --muted: #8e8a83;
+  --soft: #b9b5ad;
+  --ink: #f3f0ea;
+  /* the one warm accent; it also means "held for review" */
+  --accent: #f0a55a;
+  /* decision states */
+  --release: #7dbd97;
+  --hold: var(--accent);
+  --freeze: #ec6a5b;
+  --pending: #4a4945;
+  /* banks: cool, desaturated, never a state hue */
+  --bank-a: #8ea6ff;
+  --bank-b: #b89df0;
+  --bank-c: #62c2d4;
+  --bank-d: #e39dc0;
+  --bank-e: #d3cec3;
+  --serif: "Newsreader", "Iowan Old Style", Georgia, serif;
+  --sans: "Geist", "Helvetica Neue", Helvetica, sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 15px/1.5 var(--sans); -webkit-font-smoothing: antialiased;
+  display: grid; grid-template-rows: auto auto 1fr auto auto; min-height: 100vh;
+}
+button { font: inherit; color: inherit; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* ---------- header ---------- */
+header {
+  display: flex; align-items: center; gap: 28px; padding: 22px 48px 0;
+}
+.brand { display: flex; align-items: baseline; gap: 14px; }
+.brand b { font: 500 20px/1 var(--serif); letter-spacing: -.01em; }
+.brand span { color: var(--muted); font-size: 13px; }
+.phase { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--soft); }
+.phase i {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--pending);
+  transition: background-color .3s var(--ease);
+}
+.phase.live i { background: var(--accent); animation: pulse 2s ease-out infinite; }
+.phase.skip i { background: var(--soft); }
+.phase.done i { background: var(--release); }
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(240, 165, 90, .45); }
+  70% { box-shadow: 0 0 0 8px rgba(240, 165, 90, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(240, 165, 90, 0); }
+}
+.spacer { flex: 1; }
+.controls { display: flex; gap: 8px; }
+.btn {
+  border: 1px solid var(--line); background: var(--raise); border-radius: 999px;
+  padding: 8px 18px; font-size: 13px; font-weight: 500; cursor: pointer;
+  transition: border-color .2s var(--ease), background-color .2s var(--ease);
+}
+.btn:hover { border-color: var(--faint); }
+.btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.btn.primary:hover { background: #fff; }
+kbd {
+  font: 11px var(--mono); color: var(--muted); border: 1px solid var(--line);
+  border-radius: 4px; padding: 1px 5px; margin-left: 6px;
+}
+.btn.primary kbd { color: #555; border-color: #ccc; }
+
+/* ---------- rail ---------- */
+.rail {
+  display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; padding: 22px 48px 0;
+}
+.seg {
+  border: 0; background: none; padding: 0; text-align: left; cursor: default;
+  display: grid; gap: 7px;
+}
+.seg .bar {
+  height: 3px; border-radius: 2px; background: var(--line); position: relative; overflow: hidden;
+}
+.seg .bar::after {
+  content: ""; position: absolute; inset: 0; background: var(--state, var(--soft));
+  transform: scaleX(0); transform-origin: left; transition: transform .45s var(--ease);
+}
+.seg.decided .bar::after, .seg.current .bar::after { transform: scaleX(1); }
+.seg.current:not(.decided) .bar::after { background: var(--soft); opacity: .55; }
+.seg .lbl { font: 12px var(--mono); color: var(--muted); transition: color .25s var(--ease); }
+.seg.decided { cursor: pointer; }
+.seg.decided .lbl, .seg.current .lbl { color: var(--soft); }
+.seg.viewing .lbl { color: var(--ink); }
+
+/* ---------- stage ---------- */
+main {
+  display: grid; place-items: center; padding: 28px 48px 8px; min-height: 0;
+}
+.stage { width: min(1080px, 100%); position: relative; }
+.view {
+  transition: opacity .28s var(--ease), transform .28s var(--ease);
+}
+.view.out { opacity: 0; transform: translateY(-6px); }
+.view.in { opacity: 0; transform: translateY(10px); }
+
+.eyebrow {
+  font: 500 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
+}
+.eyebrow b { color: var(--soft); font-weight: 500; }
+
+/* intro + interstitial */
+.intro h1, .skip h1 {
+  font: 400 clamp(40px, 5vw, 64px)/1.06 var(--serif); letter-spacing: -.02em;
+  margin: 16px 0 18px; max-width: 18ch;
+}
+.intro h1 em, .skip h1 em { font-style: italic; color: var(--accent); }
+.intro p, .skip p { color: var(--soft); font-size: 17px; max-width: 58ch; margin: 0; }
+.skip .count { font: 400 15px var(--mono); color: var(--muted); margin-top: 22px; }
+
+/* hop card */
+.card { display: grid; grid-template-columns: 1.15fr 1fr; gap: 56px; align-items: end; }
+.route { display: flex; align-items: center; gap: 22px; margin: 18px 0 10px; }
+.bank {
+  display: grid; gap: 4px;
+}
+.bank .name { font: 400 clamp(38px, 4.4vw, 58px)/1 var(--serif); letter-spacing: -.02em; }
+.bank .acct { font: 13px var(--mono); color: var(--muted); }
+.route .arrow { color: var(--faint); font: 300 34px/1 var(--sans); transform: translateY(-10px); }
+.facts { display: flex; gap: 34px; margin-top: 26px; }
+.fact .k { font-size: 12px; color: var(--muted); }
+.fact .v { font: 400 20px var(--mono); margin-top: 2px; }
+
+.verdict { border-left: 1px solid var(--line); padding-left: 40px; min-height: 230px; display: grid; align-content: end; }
+.decision { transition: opacity .32s var(--ease), transform .32s var(--ease); }
+.decision.hidden { opacity: 0; transform: translateY(8px); }
+.state {
+  font: 400 clamp(44px, 5vw, 68px)/1 var(--serif); letter-spacing: -.02em;
+  color: var(--state, var(--soft)); margin: 14px 0 16px;
+}
+.reason { color: var(--soft); font-size: 16px; max-width: 42ch; margin: 0; }
+.reason .mono { color: var(--ink); }
+.contrast {
+  margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line);
+  font: italic 400 18px/1.4 var(--serif); color: var(--ink); max-width: 40ch;
+}
+.contrast small { display: block; font: 12px var(--sans); font-style: normal; color: var(--muted); margin-top: 6px; }
+.waiting { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 15px; margin-top: 16px; }
+
+/* chain path */
+.path { padding: 10px 48px 0; }
+.path svg { width: 100%; height: auto; display: block; max-height: 170px; }
+.edge-base { stroke: var(--line); stroke-width: 1.5; fill: none; }
+.edge-live {
+  fill: none; stroke-width: 2.25; stroke-linecap: round;
+  transition: stroke-dashoffset .45s var(--ease), stroke .3s var(--ease), opacity .3s var(--ease);
+}
+.node circle { fill: var(--stage); stroke-width: 2; transition: stroke-width .25s var(--ease); }
+.node text { font: 500 13px var(--mono); fill: var(--ink); text-anchor: middle; dominant-baseline: central; }
+.node .tag { font: 11px var(--mono); fill: var(--muted); }
+.node.active circle { stroke-width: 3.5; }
+.hopno { font: 11px var(--mono); fill: var(--muted); text-anchor: middle; transition: fill .25s var(--ease); }
+.hopno.on { fill: var(--soft); }
+
+/* results */
+.results { display: grid; grid-template-columns: 1fr 1.1fr; gap: 64px; align-items: center; }
+.delta { margin-top: 18px; }
+.delta + .delta { margin-top: 34px; }
+.delta .k { color: var(--soft); font-size: 15px; }
+.delta .v { display: flex; align-items: baseline; gap: 16px; margin-top: 6px; }
+.delta .from { font: 400 34px var(--serif); color: var(--muted); }
+.delta .to { font: 400 clamp(48px, 5vw, 66px)/1 var(--serif); letter-spacing: -.02em; }
+.delta .to.accent { color: var(--accent); }
+.delta .arrow { color: var(--faint); font-size: 24px; }
+.delta small { display: block; color: var(--muted); font-size: 13px; margin-top: 6px; }
+.chart text { font: 12px var(--mono); fill: var(--muted); }
+.chart .row-l { fill: var(--soft); font-family: var(--sans); font-size: 13px; }
+.chart .axis { stroke: var(--line); }
+.chart .link { stroke: var(--faint); stroke-width: 2; }
+.chart .alone { fill: var(--bg); stroke: var(--muted); stroke-width: 1.5; }
+.chart .tog { fill: var(--ink); }
+.chart .lift { fill: var(--accent); }
+.chart .dot-in { transition: opacity .4s var(--ease); }
+.legend { display: flex; gap: 18px; font-size: 12px; color: var(--muted); margin-top: 8px; }
+.legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.caveat { margin-top: 22px; font-size: 13px; color: var(--muted); }
+.link-btn { background: none; border: 0; padding: 0; color: var(--soft); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; font-size: 13px; }
+
+/* footer */
+footer {
+  display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)) auto; gap: 18px; align-items: end;
+  padding: 18px 48px 22px; margin-top: 14px; border-top: 1px solid var(--line);
+}
+.kpi .v { font: 400 18px var(--mono); font-variant-numeric: tabular-nums; }
+.kpi .k { font-size: 11.5px; color: var(--muted); margin-top: 2px; white-space: nowrap; }
+.badges { display: flex; gap: 8px; justify-self: end; }
+.badge {
+  font: 11px var(--mono); color: var(--soft); border: 1px solid var(--line); border-radius: 999px;
+  padding: 4px 10px; white-space: nowrap;
+}
+.hint { padding: 0 48px 14px; font-size: 12px; color: var(--faint); }
+
+@media (max-width: 1100px) {
+  footer { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .badges { grid-column: 1 / -1; justify-self: start; }
+  .card, .results { grid-template-columns: 1fr; gap: 32px; }
+  .verdict { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); padding-top: 20px; min-height: 0; }
+}
+@media (max-width: 720px) {
+  header, .rail, main, .path, footer, .hint { padding-left: 16px; padding-right: 16px; }
+  header { flex-wrap: wrap; gap: 12px 20px; }
+  .rail { grid-template-columns: repeat(4, 1fr); row-gap: 14px; }
+  footer { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .facts { flex-wrap: wrap; gap: 18px 28px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><b>FreezeFrame</b><span>Presenter mode</span></div>
+  <div class="phase" id="phase"><i></i><span id="phaseText">Ready</span></div>
+  <div class="spacer"></div>
+  <div class="controls">
+    <button class="btn primary" id="playBtn">Play<kbd>Space</kbd></button>
+    <button class="btn" id="restartBtn">Restart<kbd>R</kbd></button>
+  </div>
+</header>
+
+<nav class="rail" id="rail" aria-label="Hops"></nav>
+
+<main>
+  <div class="stage"><div class="view" id="view"></div></div>
+</main>
+
+<section class="path" aria-label="Chain">
+  <svg id="chain" viewBox="0 0 1000 150" role="img" aria-label="The eight payments in hop order; the last returns to the first account"></svg>
+</section>
+
+<footer>
+  <div class="kpi"><div class="v" id="kRate">–</div><div class="k">payments / s</div></div>
+  <div class="kpi"><div class="v" id="kP50">–</div><div class="k">p50 decision latency</div></div>
+  <div class="kpi"><div class="v" id="kP99">–</div><div class="k">p99 decision latency</div></div>
+  <div class="kpi"><div class="v" id="kScored">–</div><div class="k">payments scored</div></div>
+  <div class="kpi"><div class="v" id="kHeld">–</div><div class="k">held for review</div></div>
+  <div class="kpi"><div class="v" id="kFrozen">–</div><div class="k">freeze requests</div></div>
+  <div class="kpi"><div class="v" id="kNext">–</div><div class="k">held at next hop</div></div>
+  <div class="kpi"><div class="v" id="kEsc">–</div><div class="k">warm-tier escalations</div></div>
+  <div class="badges" id="badges"></div>
+</footer>
+<div class="hint">Space play / pause · R restart · ← → review decided hops · Esc back to live</div>
+
+<script src="data.js"></script>
+<script src="sim.js"></script>
+<script>
+(function () {
+  const { hops, summary, D, BANKS, fmtUsd, fmtMs, fmtInt, tween } = FF;
+  const $ = (id) => document.getElementById(id);
+  const REVIEW_COST = 100;  // freezeframe/config.py REVIEW_COST_USD
+  const STATE_WORD = { release: "Released", hold: "Held for review", freeze: "Freeze requested" };
+  const bankVar = (L) => `var(--bank-${L.toLowerCase()})`;
+  const stateVar = (a) => `var(--${a})`;
+  const dayFmt = new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short" });
+  const timeFmt = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit" });
+
+  const st = { current: null, decided: {}, review: null, skip: null, done: false, showResults: false };
+
+  // ---------- badges ----------
+  const attest = D.chain.attestation;
+  const tree = D.chain.tree_format === "zdnn_tensors" ? "IBM Z AI accelerator" : "CPU";
+  $("badges").innerHTML =
+    `<span class="badge">enclave: ${attest}</span><span class="badge">scoring: ${tree}</span>`;
+
+  // ---------- rail ----------
+  $("rail").innerHTML = hops.map((h, i) =>
+    `<button class="seg" data-i="${i}" aria-label="Hop ${i + 1}"><div class="bar"></div>` +
+    `<div class="lbl">${i + 1}  ${h.fromBank}→${h.toBank}</div></button>`).join("");
+  const segs = [...$("rail").children];
+  segs.forEach((s) => s.addEventListener("click", () => {
+    const i = +s.dataset.i;
+    if (st.decided[i]) { st.review = i; st.showResults = false; render(); }
+  }));
+  function paintRail() {
+    const shown = viewingIndex();
+    segs.forEach((s, i) => {
+      const d = st.decided[i];
+      s.classList.toggle("decided", !!d);
+      s.classList.toggle("current", i === st.current);
+      s.classList.toggle("viewing", i === shown && !st.showResults);
+      s.style.setProperty("--state", d ? stateVar(d.action) : "var(--soft)");
+    });
+  }
+
+  // ---------- chain path ----------
+  // Accounts in hop order; hop i runs from node i to node i+1, the last hop returns to node 0
+  // underneath, so the cycle closes without crossing the path.
+  const N = hops.length, X0 = 60, X1 = 940, Y = 58, R = 20;
+  const nx = (j) => X0 + j * (X1 - X0) / (N - 1);
+  function buildChain() {
+    let s = `<defs>${["release", "hold", "freeze", "soft"].map((k) =>
+      `<marker id="m-${k}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="var(--${k})"/></marker>`).join("")}</defs>`;
+    hops.forEach((h, i) => {
+      const d = i < N - 1
+        ? `M${nx(i) + R + 4},${Y} L${nx(i + 1) - R - 6},${Y}`
+        : `M${nx(N - 1)},${Y + R + 4} C${nx(N - 1)},${Y + 92} ${nx(0)},${Y + 92} ${nx(0)},${Y + R + 6}`;
+      s += `<path class="edge-base" d="${d}"/>`;
+      s += `<path class="edge-live" id="e${i}" d="${d}" opacity="0"/>`;
+      const lx = i < N - 1 ? (nx(i) + nx(i + 1)) / 2 : (nx(0) + nx(N - 1)) / 2;
+      const ly = i < N - 1 ? Y - 12 : Y + 84;
+      s += `<text class="hopno" id="hn${i}" x="${lx}" y="${ly}">${i + 1}</text>`;
+    });
+    hops.forEach((h, j) => {
+      s += `<g class="node" id="n${j}"><circle cx="${nx(j)}" cy="${Y}" r="${R}" stroke="${bankVar(h.fromBank)}"/>` +
+           `<text x="${nx(j)}" y="${Y}">${h.fromBank}</text>` +
+           `<text class="tag" x="${nx(j)}" y="${Y + R + 15}">${h.from}</text></g>`;
+    });
+    $("chain").innerHTML = s;
+    hops.forEach((_, i) => {
+      const e = $("e" + i), L = e.getTotalLength ? e.getTotalLength() : 200;
+      e.style.strokeDasharray = L; e.style.strokeDashoffset = L; e.dataset.len = L;
+    });
+  }
+  function paintChain() {
+    const shown = viewingIndex();
+    hops.forEach((h, i) => {
+      const e = $("e" + i), d = st.decided[i];
+      const on = d || i === st.current;
+      const key = d ? d.action : "soft";
+      e.style.stroke = `var(--${key})`;
+      e.setAttribute("marker-end", on ? `url(#m-${key})` : "");
+      e.setAttribute("opacity", on ? (d ? 1 : .55) : 0);
+      e.style.strokeDashoffset = on ? 0 : e.dataset.len;
+      $("hn" + i).classList.toggle("on", !!on);
+    });
+    hops.forEach((_, j) => {
+      const active = shown != null && !st.showResults && (j === shown || j === (shown + 1) % N);
+      $("n" + j).classList.toggle("active", active);
+    });
+  }
+
+  // ---------- views ----------
+  const view = $("view");
+  let swapTimer = null, lastKey = null;
+  function swap(key, html, after) {
+    if (key === lastKey) { if (after) after(false); return; }
+    lastKey = key;
+    clearTimeout(swapTimer);
+    if (FF.reduced) { view.innerHTML = html; after && after(true); return; }
+    view.classList.add("out");
+    swapTimer = setTimeout(() => {
+      view.innerHTML = html;
+      view.classList.remove("out"); view.classList.add("in");
+      void view.offsetWidth;
+      view.classList.remove("in");
+      after && after(true);
+    }, 180);
+  }
+
+  function introHTML() {
+    const banks = new Set(hops.flatMap((h) => [h.fromBank, h.toBank])).size;
+    return `<div class="intro"><div class="eyebrow">A real laundering attempt from the test split</div>
+      <h1>Eight payments, ${banks} banks, and money that comes <em>back where it started</em>.</h1>
+      <p>A ${D.chain.pattern.toLowerCase()} spread over ${D.chain.span_hours.toFixed(1)} hours of data time. Each bank sees only its own slice. Inside the enclave, accounts are pseudonymous but linked, so the whole chain is visible. Press Play to replay it through the live system.</p></div>`;
+  }
+
+  function skipHTML(ev) {
+    const next = Object.keys(st.decided).length;
+    return `<div class="skip"><div class="eyebrow">Fast-forward · before hop <b>${next + 1} of ${N}</b></div>
+      <h1>Skipping <em>${ev.hours.toFixed(1)} h</em> of traffic.</h1>
+      <p>These payments are loaded into the enclave's graph so the patterns stay complete, but they are not scored or shown. Live replay resumes a few minutes before the next payment in the chain.</p>
+      <div class="count">${fmtInt(ev.payments)} payments loaded into the graph, not shown</div></div>`;
+  }
+
+  function reasonText(h, d) {
+    if (d.reason === "upstream_flag")
+      return `Its own score was low (<span class="mono">p = ${d.p.toFixed(3)}</span>), but the money came from a payment already flagged at the previous hop. The enclave holds it at this next hop.`;
+    if (d.action === "freeze")
+      return `Score <span class="mono">p = ${d.p.toFixed(3)}</span> clears the freeze threshold (set for 95% precision). The receiving bank is asked to freeze its account.`;
+    if (d.action === "hold")
+      return `Score <span class="mono">p = ${d.p.toFixed(3)}</span>. Expected laundered value, p × ${fmtUsd(h.amount_usd)} = <span class="mono">${fmtUsd(d.p * h.amount_usd)}</span>, exceeds the ${fmtUsd(REVIEW_COST)} cost of a review.`;
+    return `Score <span class="mono">p = ${d.p.toFixed(3)}</span>: expected laundered value ${fmtUsd(d.p * h.amount_usd)} is below the ${fmtUsd(REVIEW_COST)} review cost.`;
+  }
+
+  function contrastText(h) {
+    const owner = `Bank ${h.fromBank}`;
+    const alone = h.aloneAction, tog = h.togetherAction;
+    let line;
+    if (alone === "release" && tog !== "release") line = `On its own, ${owner} would have released this payment.`;
+    else if (alone === tog) line = `On its own, ${owner} would also have ${alone === "release" ? "released" : alone === "hold" ? "held" : "frozen"} it.`;
+    else line = `On its own, ${owner} would have ${alone === "hold" ? "held" : alone === "freeze" ? "frozen" : "released"} it; pooled, the model ${tog === "hold" ? "holds" : tog === "freeze" ? "freezes" : "releases"} it.`;
+    return `${line}<small>From the experiment's offline models on this same payment (seed 0): alone ${alone}, together ${tog}.</small>`;
+  }
+
+  function hopHTML(i) {
+    const h = hops[i];
+    return `<div class="card">
+      <div>
+        <div class="eyebrow">Hop <b>${i + 1} of ${N}</b> · ${h.fmt} · ${h.currency}</div>
+        <div class="route">
+          <div class="bank"><div class="name" style="color:${bankVar(h.fromBank)}">Bank ${h.fromBank}</div><div class="acct">account ${h.from}</div></div>
+          <div class="arrow">→</div>
+          <div class="bank"><div class="name" style="color:${bankVar(h.toBank)}">Bank ${h.toBank}</div><div class="acct">account ${h.to}</div></div>
+        </div>
+        <div class="facts">
+          <div class="fact"><div class="k">Amount</div><div class="v">${fmtUsd(h.amount_usd)}</div></div>
+          <div class="fact"><div class="k">Data time</div><div class="v">${dayFmt.format(h.date)} · ${timeFmt.format(h.date)}</div></div>
+          <div class="fact"><div class="k">Decision goes to</div><div class="v">Bank ${h.fromBank} only</div></div>
+        </div>
+      </div>
+      <div class="verdict" id="verdict"></div>
+    </div>`;
+  }
+
+  function verdictHTML(i) {
+    const h = hops[i], d = st.decided[i];
+    if (!d) return `<div class="eyebrow">Live decision</div><div class="waiting">Scoring in the enclave…</div>`;
+    return `<div class="decision hidden" id="decision"><div class="eyebrow">Live decision</div>
+      <div class="state" style="--state:${stateVar(d.action)}">${STATE_WORD[d.action]}</div>
+      <p class="reason">${reasonText(h, d)}</p>
+      <div class="contrast">${contrastText(h)}</div></div>`;
+  }
+
+  function showVerdict(i, animate) {
+    const v = $("verdict");
+    if (!v) return;
+    v.innerHTML = verdictHTML(i);
+    const dec = $("decision");
+    if (dec) {
+      if (!animate || FF.reduced) dec.classList.remove("hidden");
+      else requestAnimationFrame(() => requestAnimationFrame(() => dec.classList.remove("hidden")));
+    }
+  }
+
+  function resultsHTML() {
+    const s = summary;
+    const best = D.latency.filter((r) => r.p99 <= 50).sort((a, b) => b.rate - a.rate)[0];
+    return `<div class="results">
+      <div>
+        <div class="eyebrow">Replay complete · results on the full test split</div>
+        <div class="delta"><div class="k">Laundering caught (minority-class F1)</div>
+          <div class="v"><span class="from">${s.aloneF1Mean.toFixed(3)}</span><span class="arrow">→</span><span class="to">${s.togetherF1.toFixed(3)}</span></div>
+          <small>Each bank alone (mean of 3 random bank splits, ${s.aloneF1Min.toFixed(3)}–${s.aloneF1Max.toFixed(3)}) → together in the enclave</small></div>
+        <div class="delta"><div class="k">Laundering payments frozen automatically</div>
+          <div class="v"><span class="from">${s.frozenAloneMin}–${s.frozenAloneMax}</span><span class="arrow">→</span><span class="to accent">${s.frozenTogether}</span></div>
+          <small>of ${fmtInt(s.laundering)} laundering payments; ${s.legitFrozen} legitimate payments frozen together</small></div>
+        <p class="caveat">Enclave ${attest}, scoring on ${tree}, measured on a laptop, not yet on LinuxONE.${best ? ` Live path p99 ${fmtMs(best.p99)} at ${fmtInt(best.rate)} payments/s.` : ""}
+          <br><button class="link-btn" id="backBtn">Review the hops</button></p>
+      </div>
+      <div><svg class="chart" id="dumbbell" viewBox="0 0 560 300" role="img" aria-label="F1 per bank, alone versus together"></svg>
+        <div class="legend"><span><i style="border:1.5px solid var(--muted)"></i>bank alone</span><span><i style="background:var(--ink)"></i>together in the enclave</span><span><i style="background:var(--accent)"></i>lift</span></div></div>
+    </div>`;
+  }
+
+  function drawDumbbell() {
+    const svg = $("dumbbell");
+    if (!svg) return;
+    const rows = D.results.members.map((m) => ({ k: `Bank ${BANKS[m.member]}`, a: m.alone, t: m.together }));
+    rows.push({ k: "All banks", a: D.results.alone_f1_by_seed["0"], t: D.results.together_f1, all: true });
+    const L = 96, Rr = 520, top = 18, rowH = 40, lo = 0.3, hi = 0.75;
+    const x = (v) => L + (v - lo) / (hi - lo) * (Rr - L);
+    let s = "";
+    [0.3, 0.4, 0.5, 0.6, 0.7].forEach((v) => {
+      s += `<line class="axis" x1="${x(v)}" x2="${x(v)}" y1="${top - 6}" y2="${top + rows.length * rowH - 10}"/>`;
+      s += `<text x="${x(v)}" y="${top + rows.length * rowH + 8}" text-anchor="middle">${v.toFixed(1)}</text>`;
+    });
+    rows.forEach((r, i) => {
+      const y = top + i * rowH + 12 + (r.all ? 10 : 0);
+      if (r.all) s += `<line class="axis" x1="0" x2="${Rr}" y1="${y - 24}" y2="${y - 24}"/>`;
+      s += `<text class="row-l" x="0" y="${y + 4}" ${r.all ? 'style="fill:var(--ink)"' : ""}>${r.k}</text>`;
+      s += `<line class="link dot-in" x1="${x(r.a)}" x2="${x(r.t)}" y1="${y}" y2="${y}" style="opacity:0;transition-delay:${120 + i * 70}ms"/>`;
+      s += `<circle class="alone" cx="${x(r.a)}" cy="${y}" r="5.5"/>`;
+      s += `<circle class="tog dot-in" cx="${x(r.t)}" cy="${y}" r="6" style="opacity:0;transition-delay:${160 + i * 70}ms"/>`;
+      s += `<text class="lift dot-in" x="${x(r.t) + 12}" y="${y + 4}" style="opacity:0;transition-delay:${200 + i * 70}ms">+${(r.t - r.a).toFixed(3)}</text>`;
+    });
+    s += `<text x="${Rr}" y="${top + rows.length * rowH + 26}" text-anchor="end">minority-class F1 · seed 0 bank split</text>`;
+    svg.innerHTML = s;
+    requestAnimationFrame(() => requestAnimationFrame(() =>
+      svg.querySelectorAll(".dot-in").forEach((el) => (el.style.opacity = 1))));
+  }
+
+  function viewingIndex() {
+    if (st.review != null) return st.review;
+    return st.current;
+  }
+
+  function render(animateDecision = false) {
+    paintRail(); paintChain();
+    if (st.showResults) {
+      swap("results", resultsHTML(), () => {
+        drawDumbbell();
+        const b = $("backBtn");
+        if (b) b.onclick = () => { st.showResults = false; st.review = N - 1; render(); };
+      });
+      return;
+    }
+    const i = viewingIndex();
+    if (st.review == null && st.skip) { swap("skip-" + st.skip.hours + "-" + st.skip.payments, skipHTML(st.skip)); return; }
+    if (i == null) { swap("intro", introHTML()); return; }
+    const fresh = lastKey !== "hop-" + i;
+    swap("hop-" + i, hopHTML(i), (swapped) => showVerdict(i, animateDecision || swapped));
+    if (!fresh && !animateDecision) return;
+  }
+
+  // ---------- phase ----------
+  function setPhase(kind, text) {
+    const p = $("phase");
+    p.className = "phase " + kind;
+    $("phaseText").textContent = text;
+  }
+
+  // ---------- KPIs ----------
+  function kpis(s) {
+    tween($("kRate"), s.rate, fmtInt);
+    tween($("kP50"), s.p50, fmtMs);
+    tween($("kP99"), s.p99, fmtMs);
+    tween($("kScored"), s.payments, fmtInt);
+    tween($("kHeld"), s.actions.hold, fmtInt);
+    tween($("kFrozen"), s.actions.freeze, fmtInt);
+    tween($("kNext"), s.upstream_holds, fmtInt);
+    tween($("kEsc"), s.escalations, fmtInt);
+  }
+  function clearKpis() {
+    ["kRate", "kP50", "kP99", "kScored", "kHeld", "kFrozen", "kNext", "kEsc"].forEach((id) => {
+      const el = $(id); delete el.dataset.v; el.textContent = "–";
+    });
+  }
+
+  // ---------- replay ----------
+  const hopIndexByTs = Object.fromEntries(hops.map((h, i) => [h.ts, i]));
+  const player = FF.replay({
+    onEvent(ev) {
+      if (ev.type === "stats") { kpis(ev); return; }
+      if (ev.type === "skip") {
+        st.skip = ev; st.review = null;
+        setPhase("skip", "Fast-forwarding · not scored or shown");
+        render();
+      } else if (ev.type === "live") {
+        st.skip = null; st.review = null;
+        st.current = hopIndexByTs[ev.hop_time] ?? st.current;
+        setPhase("live", `Live · ${ev.speed}× real time`);
+        render();
+      } else if (ev.type === "hop") {
+        st.decided[ev.hop] = ev;
+        if (st.review == null && st.current === ev.hop) {
+          paintRail(); paintChain(); showVerdict(ev.hop, true);
+        } else render();
+      } else if (ev.type === "done") {
+        st.done = true; st.current = null;
+        setPhase("done", "Replay complete");
+        setTimeout(() => { if (st.done && st.review == null) { st.showResults = true; render(); } }, 1400);
+      }
+    },
+    onReset() {
+      Object.assign(st, { current: null, decided: {}, review: null, skip: null, done: false, showResults: false });
+      lastKey = null; clearKpis(); setPhase("", "Ready"); render(); syncButton();
+    },
+    onEnd() { syncButton(); },
+  });
+
+  function syncButton() {
+    $("playBtn").firstChild.textContent = player.playing ? "Pause" : (st.done ? "Replay" : "Play");
+  }
+  function toggle() {
+    if (player.playing) player.pause(); else { if (st.done) player.reset(); player.play(); }
+    syncButton();
+  }
+  $("playBtn").addEventListener("click", toggle);
+  $("restartBtn").addEventListener("click", () => { player.reset(); });
+
+  function decidedList() { return Object.keys(st.decided).map(Number).sort((a, b) => a - b); }
+  document.addEventListener("keydown", (e) => {
+    if (e.target.closest && e.target.closest("button") && e.code === "Space") e.preventDefault();
+    if (e.code === "Space") { e.preventDefault(); toggle(); }
+    else if (e.key === "r" || e.key === "R") player.reset();
+    else if (e.key === "Escape") { st.review = null; st.showResults = st.done; render(); }
+    else if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      const list = decidedList();
+      if (!list.length) return;
+      const cur = st.showResults ? N : (st.review ?? viewingIndex() ?? list[list.length - 1]);
+      let pos = list.indexOf(cur);
+      if (pos === -1) pos = e.key === "ArrowLeft" ? list.findIndex((v) => v > cur) : list.length;
+      if (pos === -1) pos = list.length;
+      const nextPos = e.key === "ArrowLeft" ? pos - 1 : pos + 1;
+      if (nextPos >= list.length) {
+        st.review = null; st.showResults = st.done; render(); return;
+      }
+      if (nextPos < 0) return;
+      st.review = list[nextPos]; st.showResults = false; render();
+    }
+  });
+
+  buildChain();
+  render();
+})();
+</script>
+</body>
+</html>

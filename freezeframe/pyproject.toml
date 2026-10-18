@@ -1,0 +1,26 @@
+[project]
+name = "freezeframe"
+version = "0.1.0"
+description = "Cross-bank money-mule detection in a shared enclave on IBM LinuxONE"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+  "snapml==1.17.2",
+  "numpy",
+  "pandas",
+  "pyarrow",
+  "scikit-learn",
+  "fastapi",
+  "uvicorn",
+  "pynacl",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "httpx"]
+xgb = ["xgboost>=2,<3"]  # Snap ML 1.17 cannot import XGBoost 3.x JSON
+kafka = ["kafka-python"]
+
+[tool.setuptools.packages.find]
+include = ["freezeframe*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FreezeFrame prototypes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f4f2ee; --panel: #ffffff; --ink: #17181b; --muted: #676a72; --line: #e2dfd8; --accent: #1f5bd8;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #121315; --panel: #1a1c1f; --ink: #ecebe7; --muted: #9a9ca3; --line: #2b2e33; --accent: #7aa2ff; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 16px/1.5 "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif; }
+main { max-width: 1120px; margin: 0 auto; padding: 56px 24px 72px; }
+h1 { font-size: 34px; letter-spacing: -0.02em; margin: 0 0 8px; font-weight: 600; }
+.lede { color: var(--muted); max-width: 680px; margin: 0 0 40px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px; }
+a.card { display: block; text-decoration: none; color: inherit; background: var(--panel);
+  border: 1px solid var(--line); border-radius: 14px; padding: 22px 22px 20px;
+  transition: border-color .25s ease, transform .25s ease, box-shadow .25s ease; }
+a.card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 10px 30px -18px rgba(0,0,0,.35); }
+.num { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; letter-spacing: .08em; }
+.card h2 { font-size: 21px; margin: 6px 0 4px; font-weight: 600; letter-spacing: -0.01em; }
+.tag { font-size: 13px; color: var(--accent); margin-bottom: 12px; }
+.card p { margin: 0 0 10px; color: var(--muted); font-size: 15px; }
+.card dl { margin: 14px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 13px; }
+.card dt { color: var(--muted); }
+.card dd { margin: 0; }
+.note { margin-top: 40px; color: var(--muted); font-size: 14px; max-width: 760px; }
+code { font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>FreezeFrame interface prototypes</h1>
+  <p class="lede">Five directions for the live demo. Each one plays the same recorded replay
+    (the real 8-payment cycle and the real results), so only the design changes. Open one and
+    press Play.</p>
+  <div class="grid">
+    <a class="card" href="01-lanes.html">
+      <div class="num">01</div><h2>Lanes</h2><div class="tag">Operations console</div>
+      <p>One row per bank, time running left to right. You see the money step between banks as it happens.</p>
+      <dl><dt>Best for</dt><dd>A live operator view, and judges asking "how does it run?"</dd>
+          <dt>Theme</dt><dd>Dark graphite · IBM Plex</dd></dl>
+    </a>
+    <a class="card" href="02-ring.html">
+      <div class="num">02</div><h2>Ring</h2><div class="tag">Editorial</div>
+      <p>The cycle is drawn as a ring, so the money visibly comes back to where it started.</p>
+      <dl><dt>Best for</dt><dd>Screenshots, the deck, and a first impression</dd>
+          <dt>Theme</dt><dd>Light paper · Fraunces</dd></dl>
+    </a>
+    <a class="card" href="03-split.html">
+      <div class="num">03</div><h2>Split</h2><div class="tag">Alone vs together</div>
+      <p>The comparison is the layout. Each hop reads across from "a bank alone" to "together in the enclave".</p>
+      <dl><dt>Best for</dt><dd>Making the privacy-dividend argument in one glance</dd>
+          <dt>Theme</dt><dd>Dark ink · Bricolage Grotesque</dd></dl>
+    </a>
+    <a class="card" href="04-boundary.html">
+      <div class="num">04</div><h2>Boundary</h2><div class="tag">The enclave, drawn</div>
+      <p>Banks sit on one side and the enclave in the middle. Each bank sees only its own fragment; only the enclave sees the whole chain.</p>
+      <dl><dt>Best for</dt><dd>Explaining why no customer data is shared</dd>
+          <dt>Theme</dt><dd>Blueprint navy · Red Hat</dd></dl>
+    </a>
+    <a class="card" href="05-story.html">
+      <div class="num">05</div><h2>Story</h2><div class="tag">Presenter mode</div>
+      <p>One hop at a time, in large type for a projector, and it ends on the results slide. Keyboard: Space, R, ← →.</p>
+      <dl><dt>Best for</dt><dd>The 3-minute pitch</dd>
+          <dt>Theme</dt><dd>Near-black stage · Newsreader</dd></dl>
+    </a>
+    <a class="card" href="06-story-split.html" style="border-color:var(--accent)">
+      <div class="num">06 · combined</div><h2>Story × Split</h2><div class="tag">Story's look, Split's structure</div>
+      <p>Each hop reads across from "a bank alone" to "together in the enclave", on Story's near-black stage. Skipped hours appear as dividers between the hops they separate.</p>
+      <dl><dt>Best for</dt><dd>The live demo and the pitch, in one page</dd>
+          <dt>Theme</dt><dd>Near-black stage · Newsreader + Geist</dd></dl>
+    </a>
+  </div>
+  <p class="note">Data: <code>data.js</code> holds the demo chain, the results in
+    <code>results/HI-Small/</code>, and a recorded replay from the live demo. <code>sim.js</code>
+    plays it back at the server's real cadence. When you pick one, it gets wired to the live
+    server (<code>/api/stream</code>) in <code>demo/static/index.html</code>.</p>
+</main>
+</body>
+</html>

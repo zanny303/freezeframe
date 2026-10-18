@@ -1,0 +1,701 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FreezeFrame · Lanes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d0f12;
+  --bg-2: #111419;
+  --panel: #151920;
+  --panel-2: #1a1f27;
+  --line: #242a33;
+  --line-2: #2f3640;
+  --ink: #e7e9ec;
+  --ink-2: #b9bfc8;
+  --muted: #7f8893;
+  --faint: #4a525d;
+
+  /* decision states — reserved, never used for banks */
+  --release: #3fcf8e;
+  --hold: #f2b33d;
+  --freeze: #f0575a;
+  --pending: #3a414b;
+
+  /* banks — cool hues only, distinct from the state hues */
+  --bank-a: #5b9cf5;
+  --bank-b: #a68bfa;
+  --bank-c: #37bdc9;
+  --bank-d: #e47bc8;
+  --bank-e: #a9b0c2;
+
+  --together: #e7e9ec;
+  --alone: #6c7480;
+
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  background-image: radial-gradient(1200px 600px at 70% -10%, #161b23 0%, transparent 60%);
+  color: var(--ink);
+  font: 14px/1.45 var(--sans);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* ---------- header ---------- */
+header {
+  position: sticky; top: 0; z-index: 5;
+  background: rgba(13, 15, 18, .92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+.bar {
+  display: grid; grid-template-columns: auto 1fr auto; gap: 24px; align-items: center;
+  padding: 14px 28px;
+}
+.brand { display: flex; align-items: baseline; gap: 12px; }
+.brand b { font-weight: 600; font-size: 17px; letter-spacing: -.01em; }
+.brand span { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+.desc { color: var(--ink-2); font-size: 13px; display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; }
+.desc .sep { color: var(--faint); }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; }
+.badge {
+  font-family: var(--mono); font-size: 11px; color: var(--muted);
+  border: 1px solid var(--line-2); border-radius: 4px; padding: 3px 8px; white-space: nowrap;
+}
+.badge i { font-style: normal; color: var(--ink-2); }
+.right { display: flex; gap: 12px; align-items: center; }
+.phase {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--mono); font-size: 12px; color: var(--ink-2);
+  padding: 6px 10px; border: 1px solid var(--line-2); border-radius: 4px; min-width: 210px;
+  transition: border-color .3s var(--ease), color .3s var(--ease);
+}
+.phase .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); transition: background .3s var(--ease); }
+.phase.live { border-color: #2b5c45; color: var(--ink); }
+.phase.live .dot { background: var(--release); animation: pulse 1.8s ease-out infinite; }
+.phase.skip .dot { background: var(--ink-2); }
+.phase.done .dot { background: var(--ink); }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(63, 207, 142, .45); } 100% { box-shadow: 0 0 0 7px rgba(63, 207, 142, 0); } }
+button {
+  font: 500 13px var(--sans); color: var(--ink); background: var(--panel-2);
+  border: 1px solid var(--line-2); border-radius: 4px; padding: 7px 14px; cursor: pointer;
+  transition: background .2s var(--ease), border-color .2s var(--ease);
+}
+button:hover { background: #222833; border-color: #3a424e; }
+button.primary { background: var(--ink); color: #0d0f12; border-color: var(--ink); min-width: 84px; }
+button.primary:hover { background: #fff; }
+button:focus-visible { outline: 2px solid var(--bank-a); outline-offset: 2px; }
+.progress { height: 2px; background: var(--line); }
+.progress div { height: 100%; width: 0; background: var(--ink-2); transition: width .5s linear; }
+
+/* ---------- layout ---------- */
+main {
+  display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 20px;
+  padding: 20px 28px 36px; max-width: 1920px; margin: 0 auto;
+}
+.col { display: grid; gap: 20px; align-content: start; min-width: 0; }
+section {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 6px; min-width: 0;
+}
+.sec-head {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 16px;
+  padding: 14px 18px 0;
+}
+h2 { margin: 0; font: 500 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.sec-head .note { font-size: 12px; color: var(--muted); }
+.sec-body { padding: 12px 18px 16px; }
+
+/* ---------- lanes ---------- */
+#lanes { width: 100%; height: auto; display: block; }
+#lanes text { font-family: var(--sans); }
+.lane-label { font-size: 12px; font-weight: 500; }
+.axis text { font-family: var(--mono); font-size: 10px; fill: var(--muted); }
+.ghost { fill: none; stroke: var(--line-2); stroke-width: 1.5; stroke-dasharray: 3 4; }
+.dwell { fill: none; stroke: var(--faint); stroke-width: 1; stroke-dasharray: 1 4; stroke-linecap: round; opacity: .9; }
+.conn { fill: none; stroke-width: 2.4; stroke-linecap: round; opacity: 0; }
+.conn.on { opacity: 1; transition: stroke-dashoffset .45s var(--ease), opacity .2s var(--ease); }
+.hoplabel { font-family: var(--mono) !important; font-size: 10px; fill: var(--muted); transition: fill .3s var(--ease); }
+.node-ring { fill: var(--panel); stroke-width: 2; }
+.node-core { r: 0; transition: r .3s var(--ease), fill .3s var(--ease); }
+.node-tag { font-family: var(--mono) !important; font-size: 10px; fill: var(--ink-2); }
+#cursor { transition: transform .45s var(--ease), opacity .3s var(--ease); }
+#cursor.glide { transition: transform 1.1s var(--ease), opacity .3s var(--ease); }
+#cursor line { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 2 3; }
+#cursor rect { fill: var(--ink); }
+#cursor text { font-family: var(--mono) !important; font-size: 10px; fill: #0d0f12; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12px; color: var(--muted); padding: 2px 18px 14px; }
+.legend span { display: inline-flex; align-items: center; gap: 7px; }
+.sw { width: 18px; height: 0; border-top: 2px solid; display: inline-block; }
+.sw.ghost-sw { border-top: 1.5px dashed var(--line-2); }
+.sw.dwell-sw { border-top: 1px dotted var(--muted); }
+.ffwd {
+  font-family: var(--mono); font-size: 12px; color: var(--ink-2);
+  min-height: 18px; transition: opacity .3s var(--ease);
+}
+
+/* ---------- hop ledger ---------- */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th {
+  text-align: left; font: 500 10.5px var(--mono); letter-spacing: .08em; text-transform: uppercase;
+  color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap;
+}
+td { padding: 9px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; vertical-align: middle; }
+tr:last-child td { border-bottom: 0; }
+tbody tr { transition: background .3s var(--ease); }
+tbody tr.current { background: rgba(231, 233, 236, .045); }
+td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+td.why { color: var(--ink-2); white-space: normal; min-width: 240px; font-size: 12.5px; }
+th.grp { border-left: 1px solid var(--line); }
+td.grp { border-left: 1px solid var(--line); }
+.bank { font-weight: 500; }
+.acct { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.pill {
+  display: inline-block; font: 500 11px var(--mono); letter-spacing: .04em; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 3px; min-width: 66px; text-align: center;
+  transition: background .3s var(--ease), color .3s var(--ease), border-color .3s var(--ease);
+}
+.pill.solid.release { background: var(--release); color: #07120d; }
+.pill.solid.hold { background: var(--hold); color: #1a1203; }
+.pill.solid.freeze { background: var(--freeze); color: #1c0606; }
+.pill.solid.waiting { background: transparent; color: var(--faint); border: 1px solid var(--line-2); }
+.pill.outline { background: transparent; border: 1px solid currentColor; }
+.pill.outline.release { color: var(--release); }
+.pill.outline.hold { color: var(--hold); }
+.pill.outline.freeze { color: var(--freeze); }
+.pill.outline.none { color: var(--faint); }
+
+/* ---------- rail ---------- */
+.kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin-top: 12px; }
+.kpi { background: var(--panel); padding: 12px 16px 12px 18px; }
+.kpi .v { font: 500 22px var(--mono); font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.kpi .v small { font-size: 12px; color: var(--muted); margin-left: 3px; font-weight: 400; }
+.kpi .k { font-size: 12px; color: var(--ink-2); margin-top: 2px; }
+.kpi .s { font-size: 11px; color: var(--muted); }
+.kpi.wide { grid-column: 1 / -1; }
+.kpi .spark-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; }
+#spark { width: 190px; height: 44px; display: block; }
+#spark .budget { stroke: var(--freeze); stroke-width: 1; stroke-dasharray: 2 3; opacity: .7; }
+#spark .line { fill: none; stroke: var(--ink-2); stroke-width: 1.4; stroke-linejoin: round; }
+#spark .area { fill: rgba(185, 191, 200, .08); }
+#spark text { font: 9px var(--mono); fill: var(--muted); }
+.kpi-v-hold { color: var(--hold); }
+.kpi-v-freeze { color: var(--freeze); }
+
+.feed { list-style: none; margin: 0; padding: 4px 0 6px; max-height: 360px; overflow-y: auto; }
+.feed li {
+  display: grid; grid-template-columns: 54px 1fr; gap: 10px;
+  padding: 10px 18px; border-top: 1px solid var(--line);
+  animation: enter .35s var(--ease) both;
+}
+.feed li:first-child { border-top: 0; }
+.feed .t { font: 11px var(--mono); color: var(--muted); padding-top: 2px; }
+.feed .h { font-size: 13px; }
+.feed .r { font-size: 12px; color: var(--ink-2); margin-top: 3px; }
+.feed li.sys .h { color: var(--muted); font-size: 12px; }
+.feed .empty { color: var(--muted); font-size: 12.5px; padding: 14px 18px; display: block; }
+@keyframes enter { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+/* ---------- results ---------- */
+.results { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 20px; }
+#dumbbell { width: 100%; height: auto; display: block; }
+#dumbbell text { font-family: var(--sans); }
+#dumbbell .tick text { font: 10px var(--mono); fill: var(--muted); }
+#dumbbell .tick line { stroke: var(--line); }
+#dumbbell .row-label { font-size: 12.5px; fill: var(--ink-2); }
+#dumbbell .row-label.overall { fill: var(--ink); font-weight: 600; }
+#dumbbell .val { font: 11px var(--mono); fill: var(--muted); }
+#dumbbell .gain { font: 500 11px var(--mono); fill: var(--ink); }
+.dkey { display: flex; gap: 18px; font-size: 12px; color: var(--muted); padding: 0 18px 14px; flex-wrap: wrap; }
+.dkey span { display: inline-flex; align-items: center; gap: 7px; }
+.dot-alone { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--alone); display: inline-block; }
+.dot-together { width: 9px; height: 9px; border-radius: 50%; background: var(--together); display: inline-block; }
+
+.frozen { padding: 6px 18px 18px; }
+.fz-row { margin-top: 14px; }
+.fz-row .lbl { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--ink-2); margin-bottom: 6px; }
+.fz-row .lbl b { font: 500 13px var(--mono); color: var(--ink); }
+.track { position: relative; height: 10px; background: var(--panel-2); border-radius: 2px; overflow: hidden; }
+.track .fill { position: absolute; top: 0; bottom: 0; left: 0; width: 0; border-radius: 2px; transition: width .6s var(--ease); }
+.track .fill.alone { background: var(--alone); }
+.track .fill.range { background: repeating-linear-gradient(90deg, var(--alone) 0 2px, transparent 2px 4px); opacity: .8; }
+.track .fill.together { background: var(--together); }
+.fz-foot { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.fz-foot .v { font: 500 18px var(--mono); }
+.fz-foot .k { font-size: 12px; color: var(--muted); }
+.source { font-size: 11.5px; color: var(--muted); padding: 0 18px 14px; }
+
+@media (max-width: 1180px) {
+  main, .results { grid-template-columns: 1fr; }
+  .bar { grid-template-columns: 1fr; gap: 10px; }
+  .right { justify-content: flex-start; flex-wrap: wrap; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="brand"><b>FreezeFrame</b><span>Operations console</span></div>
+    <div class="desc">
+      <span id="chainDesc">—</span>
+      <div class="badges">
+        <span class="badge">enclave: <i id="bAttest">—</i></span>
+        <span class="badge">scoring: <i id="bTree">—</i></span>
+      </div>
+    </div>
+    <div class="right">
+      <span class="phase" id="phase"><span class="dot"></span><span id="phaseText">Ready · press Play</span></span>
+      <button class="primary" id="btnPlay">Play</button>
+      <button id="btnReset">Restart</button>
+    </div>
+  </div>
+  <div class="progress"><div id="prog"></div></div>
+</header>
+
+<main>
+  <div class="col">
+    <section>
+      <div class="sec-head">
+        <h2>Money path · bank × time</h2>
+        <span class="ffwd" id="ffwd"></span>
+      </div>
+      <div class="sec-body" style="padding-bottom:6px">
+        <svg id="lanes" viewBox="0 0 1000 380" role="img" aria-label="Laundering chain across five banks over time"></svg>
+      </div>
+      <div class="legend">
+        <span><i class="sw ghost-sw"></i>payment not yet seen</span>
+        <span><i class="sw" style="border-color:var(--release)"></i>released</span>
+        <span><i class="sw" style="border-color:var(--hold)"></i>held for review</span>
+        <span><i class="sw" style="border-color:var(--freeze)"></i>freeze requested</span>
+        <span><i class="sw dwell-sw"></i>funds sitting in a mule account</span>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-head">
+        <h2>Hop ledger</h2>
+        <span class="note">Live = streaming enclave now · Alone / Together = experiment models, same payment (seed 0)</span>
+      </div>
+      <div class="sec-body table-wrap">
+        <table>
+          <thead><tr>
+            <th>Hop</th><th>Data time</th><th>From</th><th>To</th><th style="text-align:right">Amount</th>
+            <th class="grp">Live decision</th><th>Why</th>
+            <th class="grp">Bank alone</th><th>Together</th>
+          </tr></thead>
+          <tbody id="ledger"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <div class="col">
+    <section>
+      <div class="sec-head"><h2>Enclave · live</h2><span class="note">updates every 0.5 s</span></div>
+      <div class="kpis">
+        <div class="kpi"><div class="v" id="kRate">0</div><div class="k">payments / s</div><div class="s">scored by the hot path</div></div>
+        <div class="kpi"><div class="v" id="kScored">0</div><div class="k">payments scored</div><div class="s">since replay start</div></div>
+        <div class="kpi"><div class="v"><span id="kP50">—</span></div><div class="k">median latency</div><div class="s">arrival → decision</div></div>
+        <div class="kpi"><div class="v"><span id="kP99">—</span></div><div class="k">99th pct latency</div><div class="s">budget 50 ms</div></div>
+        <div class="kpi wide">
+          <div class="spark-row">
+            <div><div class="k">p99 latency over the replay</div><div class="s">dashed line = 50 ms budget</div></div>
+            <svg id="spark" viewBox="0 0 190 44" aria-label="p99 latency history"></svg>
+          </div>
+        </div>
+        <div class="kpi"><div class="v kpi-v-hold" id="kHold">0</div><div class="k">held for review</div><div class="s">all payments, not just the chain</div></div>
+        <div class="kpi"><div class="v kpi-v-freeze" id="kFreeze">0</div><div class="k">freeze requested</div><div class="s">sent to receiving bank</div></div>
+        <div class="kpi"><div class="v" id="kUp">0</div><div class="k">held at next hop</div><div class="s">money came from a flagged payment</div></div>
+        <div class="kpi"><div class="v" id="kEsc">0</div><div class="k">warm-tier escalations</div><div class="s">full-pattern re-score, every 2 s</div></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-head"><h2>Decision feed</h2><span class="note">newest first</span></div>
+      <ul class="feed" id="feed"><li class="empty-li" style="display:block;border:0;animation:none"><span class="empty">Nothing yet. Press Play to replay the chain.</span></li></ul>
+    </section>
+  </div>
+</main>
+
+<main style="padding-top:0">
+  <div class="col" style="grid-column:1 / -1">
+    <div class="results">
+      <section>
+        <div class="sec-head"><h2>Caught alone vs together · minority-class F1</h2><span class="note">HI-Small test split, 1.0M payments</span></div>
+        <div class="sec-body"><svg id="dumbbell" viewBox="0 0 760 270" role="img" aria-label="F1 alone versus together per bank"></svg></div>
+        <div class="dkey">
+          <span><i class="dot-alone"></i>each bank alone (seed 0)</span>
+          <span><i class="dot-together"></i>together in the enclave</span>
+          <span><span style="display:inline-block;width:22px;border-top:2px solid var(--alone)"></span>range across 3 random bank splits</span>
+        </div>
+      </section>
+      <section>
+        <div class="sec-head"><h2>Laundering payments frozen</h2></div>
+        <div class="frozen">
+          <div class="fz-row">
+            <div class="lbl"><span>Each bank alone · 3 splits</span><b id="fzAlone">—</b></div>
+            <div class="track"><div class="fill range" id="fzAloneRange"></div><div class="fill alone" id="fzAloneMin"></div></div>
+          </div>
+          <div class="fz-row">
+            <div class="lbl"><span>Together in the enclave</span><b id="fzTog">—</b></div>
+            <div class="track"><div class="fill together" id="fzTogBar"></div></div>
+          </div>
+          <div class="fz-foot">
+            <div><div class="v" id="fzLegit">—</div><div class="k">legitimate payments frozen, together</div></div>
+            <div><div class="v" id="fzLift">—</div><div class="k">more laundering frozen than alone</div></div>
+          </div>
+        </div>
+        <div class="source">Bars are out of all <span id="fzTotal">—</span> laundering payments in the test split. Source: results/HI-Small.</div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<script src="data.js"></script>
+<script src="sim.js"></script>
+<script>
+(function () {
+  const { hops, BANKS, summary, D } = FF;
+  const $ = (id) => document.getElementById(id);
+  const SVGNS = "http://www.w3.org/2000/svg";
+  const bankVar = (b) => `var(--bank-${b.toLowerCase()})`;
+  const stateVar = (a) => `var(--${a})`;
+  const HOUR = 3600e3;
+
+  // ---------------- header ----------------
+  const pattern = D.chain.pattern.charAt(0) + D.chain.pattern.slice(1).toLowerCase();
+  $("chainDesc").innerHTML =
+    `Real ${pattern.toLowerCase()} laundering attempt from the test split <span class="sep">·</span> ` +
+    `${hops.length} payments <span class="sep">·</span> ${FF.banksInChain.length} banks ` +
+    `<span class="sep">·</span> ${D.chain.span_hours.toFixed(1)} h of data time`;
+  $("bAttest").textContent = D.chain.attestation;
+  $("bTree").textContent = D.chain.tree_format === "zdnn_tensors" ? "IBM Z AI accelerator" : `CPU (${D.chain.tree_format})`;
+
+  // ---------------- lanes geometry ----------------
+  const W = 1000, L = 92, R = 24, TOP = 40, LANE = 64;
+  const H = TOP + LANE * BANKS.length + 14;
+  const svg = $("lanes");
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const t0 = hops[0].date.getTime() - HOUR, t1 = hops[hops.length - 1].date.getTime() + HOUR;
+  const X = (ms) => L + (ms - t0) / (t1 - t0) * (W - L - R);
+  const laneY = (b) => TOP + LANE * BANKS.indexOf(b) + LANE / 2;
+
+  let s = "";
+  // lane bands and labels
+  BANKS.forEach((b, i) => {
+    const y = TOP + LANE * i;
+    s += `<rect x="${L}" y="${y}" width="${W - L - R}" height="${LANE}" fill="${i % 2 ? "transparent" : "rgba(255,255,255,.018)"}"/>`;
+    s += `<line x1="${L}" x2="${W - R}" y1="${y + LANE / 2}" y2="${y + LANE / 2}" stroke="var(--line)" stroke-width="1"/>`;
+    s += `<circle cx="16" cy="${y + LANE / 2}" r="4" fill="${bankVar(b)}"/>`;
+    s += `<text class="lane-label" x="28" y="${y + LANE / 2 + 4}" fill="var(--ink-2)">Bank ${b}</text>`;
+  });
+  s += `<line x1="${L}" x2="${L}" y1="${TOP}" y2="${TOP + LANE * BANKS.length}" stroke="var(--line-2)"/>`;
+  // time axis: ticks every 6 h
+  s += `<g class="axis">`;
+  const first = new Date(t0); first.setMinutes(0, 0, 0);
+  let tick = new Date(first); tick.setHours(Math.ceil(tick.getHours() / 6) * 6);
+  const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  for (; tick.getTime() <= t1; tick = new Date(tick.getTime() + 6 * HOUR)) {
+    const x = X(tick.getTime());
+    if (x < L + 4) continue;
+    const midnight = tick.getHours() === 0;
+    s += `<line x1="${x}" x2="${x}" y1="${TOP - 6}" y2="${TOP + LANE * BANKS.length}" stroke="${midnight ? "var(--line-2)" : "var(--line)"}" stroke-dasharray="${midnight ? "" : "1 3"}"/>`;
+    const lab = midnight ? `${MON[tick.getMonth()]} ${tick.getDate()}` : `${String(tick.getHours()).padStart(2, "0")}:00`;
+    s += `<text x="${x}" y="${TOP - 12}" text-anchor="middle" ${midnight ? 'style="fill:var(--ink-2)"' : ""}>${lab}</text>`;
+  }
+  s += `</g>`;
+
+  // paths: for hop i, payment curve from sender lane to receiver lane at its timestamp;
+  // dwell from arrival until the receiving account sends the next hop.
+  const geo = hops.map((h, i) => {
+    const x = X(h.date.getTime()), y1 = laneY(h.fromBank), y2 = laneY(h.toBank);
+    let d;
+    if (h.fromBank === h.toBank) {
+      d = `M ${x} ${y1} C ${x + 6} ${y1 - 30}, ${x + 30} ${y1 - 30}, ${x + 36} ${y1}`;
+      return { x, y1, y2, xe: x + 36, d };
+    }
+    const dx = 34;
+    d = `M ${x} ${y1} C ${x + dx} ${y1}, ${x + dx * 0.15} ${y2}, ${x + dx} ${y2}`;
+    return { x, y1, y2, xe: x + dx, d };
+  });
+  // dwell lines (behind)
+  s += `<g>`;
+  geo.forEach((g, i) => {
+    if (i < hops.length - 1) {
+      const nx = geo[i + 1].x;
+      if (nx > g.xe) s += `<line class="dwell" x1="${g.xe}" x2="${nx}" y1="${g.y2}" y2="${g.y2}"/>`;
+    }
+  });
+  s += `</g>`;
+  // ghost + live connectors
+  geo.forEach((g, i) => { s += `<path class="ghost" d="${g.d}"/>`; });
+  geo.forEach((g, i) => { s += `<path class="conn" id="conn-${i}" d="${g.d}"/>`; });
+  // hop numbers
+  geo.forEach((g, i) => {
+    const same = hops[i].fromBank === hops[i].toBank;
+    const lx = same ? g.x + 18 : g.x + 24, ly = same ? g.y1 - 30 : (g.y1 + g.y2) / 2 + (g.y2 > g.y1 ? -2 : 8);
+    s += `<text class="hoplabel" id="hl-${i}" x="${same ? lx : lx + 6}" y="${ly}" text-anchor="${same ? "middle" : "start"}">${i + 1}</text>`;
+  });
+  // account nodes: each sender at its send time, plus the final arrival (back to origin)
+  const nodes = geo.map((g, i) => ({ x: g.x, y: g.y1, bank: hops[i].fromBank, tag: hops[i].from, i }));
+  const last = geo[geo.length - 1];
+  nodes.push({ x: last.xe, y: last.y2, bank: hops[hops.length - 1].toBank, tag: hops[hops.length - 1].to, i: -1 });
+  nodes.forEach((n, k) => {
+    s += `<g><circle class="node-ring" cx="${n.x}" cy="${n.y}" r="8" stroke="${bankVar(n.bank)}"/>`;
+    s += `<circle class="node-core" id="nc-${k}" cx="${n.x}" cy="${n.y}" r="0" style="r:0" fill="var(--pending)"/>`;
+    const above = k % 2 === 0;
+    s += `<text class="node-tag" x="${n.x}" y="${n.y + (above ? -14 : 22)}" text-anchor="middle">${n.tag}${n.i === -1 ? " · origin" : ""}</text></g>`;
+  });
+  // cursor
+  s += `<g id="cursor" style="opacity:0;transform:translateX(${L}px)">` +
+       `<line x1="0" x2="0" y1="${TOP - 4}" y2="${TOP + LANE * BANKS.length}"/>` +
+       `<rect x="-26" y="${TOP - 26}" width="52" height="15" rx="2"/>` +
+       `<text id="cursorText" x="0" y="${TOP - 15}" text-anchor="middle">--:--</text></g>`;
+  svg.innerHTML = s;
+
+  const conns = geo.map((_, i) => $(`conn-${i}`));
+  conns.forEach((p) => {
+    const len = p.getTotalLength ? p.getTotalLength() : 120;
+    p.dataset.len = len;
+    p.style.strokeDasharray = `${len}`;
+    p.style.strokeDashoffset = `${len}`;
+  });
+  const cursor = $("cursor");
+  function moveCursor(ms, glide) {
+    cursor.classList.toggle("glide", !!glide);
+    cursor.style.opacity = 1;
+    cursor.style.transform = `translateX(${X(ms)}px)`;
+    const d = new Date(ms);
+    $("cursorText").textContent = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  }
+
+  // ---------------- ledger ----------------
+  const pill = (a, kind) => a == null
+    ? `<span class="pill outline none">n/a</span>`
+    : `<span class="pill ${kind} ${a}">${a}</span>`;
+  const fmtTime = (d) => `${MON[d.getMonth()]} ${d.getDate()} · ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  $("ledger").innerHTML = hops.map((h, i) => `
+    <tr id="row-${i}">
+      <td class="num">${i + 1}</td>
+      <td class="num">${fmtTime(h.date)}</td>
+      <td><span class="bank" style="color:${bankVar(h.fromBank)}">Bank ${h.fromBank}</span> <span class="acct">${h.from}</span></td>
+      <td><span class="bank" style="color:${bankVar(h.toBank)}">Bank ${h.toBank}</span> <span class="acct">${h.to}</span></td>
+      <td class="num" style="text-align:right">${FF.fmtUsd(h.amount_usd)}</td>
+      <td class="grp" id="live-${i}"><span class="pill solid waiting">waiting</span></td>
+      <td class="why" id="why-${i}"><span style="color:var(--faint)">—</span></td>
+      <td class="grp">${pill(h.aloneAction, "outline")}</td>
+      <td>${pill(h.togetherAction, "outline")}</td>
+    </tr>`).join("");
+
+  function reasonText(ev, h) {
+    if (ev.reason === "upstream_flag") return "Money came from an already-flagged payment: held at the next hop.";
+    if (ev.action === "freeze") return `Score ${ev.p.toFixed(3)} clears the freeze threshold (95% precision).`;
+    if (ev.action === "hold") return `Expected loss ${FF.fmtUsd(ev.p * h.amount_usd)} (p ${ev.p.toFixed(3)} × amount) exceeds the $100 review cost.`;
+    return `Score ${ev.p.toFixed(3)}: expected loss below the review cost.`;
+  }
+
+  // ---------------- feed ----------------
+  const feed = $("feed");
+  function feedPush(html, cls, t) {
+    const empty = feed.querySelector(".empty-li");
+    if (empty) empty.remove();
+    const li = document.createElement("li");
+    if (cls) li.className = cls;
+    li.innerHTML = `<span class="t">${t || ""}</span><div>${html}</div>`;
+    feed.prepend(li);
+  }
+
+  // ---------------- sparkline ----------------
+  const p99s = [];
+  function drawSpark() {
+    const el = $("spark"), w = 190, h = 44, pad = 3;
+    if (!p99s.length) { el.innerHTML = ""; return; }
+    const ymax = Math.max(80, ...p99s) * 1.1;
+    const n = Math.max(p99s.length, 30);
+    const px = (i) => pad + i / (n - 1) * (w - 2 * pad);
+    const py = (v) => h - pad - v / ymax * (h - 2 * pad);
+    const pts = p99s.map((v, i) => `${px(i).toFixed(1)},${py(v).toFixed(1)}`).join(" ");
+    const area = `${px(0)},${h - pad} ${pts} ${px(p99s.length - 1).toFixed(1)},${h - pad}`;
+    el.innerHTML =
+      `<line class="budget" x1="${pad}" x2="${w - pad}" y1="${py(50)}" y2="${py(50)}"/>` +
+      `<polygon class="area" points="${area}"/><polyline class="line" points="${pts}"/>` +
+      `<circle cx="${px(p99s.length - 1)}" cy="${py(p99s[p99s.length - 1])}" r="2.2" fill="var(--ink)"/>`;
+  }
+
+  // ---------------- results: dumbbell ----------------
+  (function drawDumbbell() {
+    const el = $("dumbbell");
+    const W2 = 760, LBL = 110, RV = 150, top = 26, rowH = 36;
+    const rows = D.results.members.map((m) => ({ label: `Bank ${BANKS[m.member]}`, bank: BANKS[m.member], a: m.alone, t: m.together, pos: m.positives }));
+    rows.push({ label: "All banks", overall: true, a: summary.aloneF1Mean, t: summary.togetherF1, lo: summary.aloneF1Min, hi: summary.aloneF1Max });
+    const H2 = top + rows.length * rowH + 22;
+    el.setAttribute("viewBox", `0 0 ${W2} ${H2}`);
+    const xmin = 0.3, xmax = 0.75;
+    const x = (v) => LBL + (v - xmin) / (xmax - xmin) * (W2 - LBL - RV);
+    let g = `<g class="tick">`;
+    for (let v = 0.3; v <= 0.751; v += 0.05) {
+      const xx = x(v);
+      g += `<line x1="${xx}" x2="${xx}" y1="${top - 8}" y2="${H2 - 22}"/>`;
+      g += `<text x="${xx}" y="${H2 - 6}" text-anchor="middle">${v.toFixed(2)}</text>`;
+    }
+    g += `<text x="${x(xmax)}" y="${top - 12}" text-anchor="end" style="fill:var(--muted)">F1 →</text></g>`;
+    rows.forEach((r, i) => {
+      const y = top + i * rowH + rowH / 2;
+      if (r.overall) g += `<line x1="${LBL - 100}" x2="${W2}" y1="${y - rowH / 2}" y2="${y - rowH / 2}" stroke="var(--line-2)"/>`;
+      g += `<text class="row-label ${r.overall ? "overall" : ""}" x="${r.overall ? 10 : 24}" y="${y + 4}">${r.label}</text>`;
+      if (r.bank) g += `<circle cx="12" cy="${y}" r="3.5" fill="${bankVar(r.bank)}"/>`;
+      if (r.overall) g += `<line x1="${x(r.lo)}" x2="${x(r.hi)}" y1="${y}" y2="${y}" stroke="var(--alone)" stroke-width="5" stroke-linecap="round" opacity=".55"/>`;
+      g += `<line class="db-link" x1="${x(r.a)}" x2="${x(r.a)}" data-x2="${x(r.t)}" y1="${y}" y2="${y}" stroke="var(--ink-2)" stroke-width="1.5" opacity=".7"/>`;
+      g += `<circle cx="${x(r.a)}" cy="${y}" r="5.5" fill="var(--panel)" stroke="var(--alone)" stroke-width="2"/>`;
+      g += `<circle class="db-tog" cx="${x(r.a)}" data-cx="${x(r.t)}" cy="${y}" r="6" fill="var(--together)" style="opacity:0"/>`;
+      g += `<text class="val" x="${W2 - RV + 14}" y="${y + 4}">${r.a.toFixed(3)} → ${r.t.toFixed(3)}</text>`;
+      g += `<text class="gain" x="${W2 - 6}" y="${y + 4}" text-anchor="end">+${(r.t - r.a).toFixed(3)}</text>`;
+    });
+    el.innerHTML = g;
+    // grow the together dot out of the alone dot once, when scrolled into view
+    const animate = () => {
+      el.querySelectorAll(".db-link").forEach((l) => {
+        const to = l.dataset.x2;
+        if (FF.reduced) { l.setAttribute("x2", to); return; }
+        const from = parseFloat(l.getAttribute("x1")), t0 = performance.now();
+        const step = (n) => { const k = Math.min(1, (n - t0) / 600), e = 1 - Math.pow(1 - k, 3);
+          l.setAttribute("x2", from + (to - from) * e); if (k < 1) requestAnimationFrame(step); };
+        requestAnimationFrame(step);
+      });
+      el.querySelectorAll(".db-tog").forEach((c) => {
+        const to = parseFloat(c.dataset.cx), from = parseFloat(c.getAttribute("cx"));
+        if (FF.reduced) { c.setAttribute("cx", to); c.style.opacity = 1; return; }
+        const t0 = performance.now();
+        const step = (n) => { const k = Math.min(1, (n - t0) / 600), e = 1 - Math.pow(1 - k, 3);
+          c.setAttribute("cx", from + (to - from) * e); c.style.opacity = Math.min(1, k * 2); if (k < 1) requestAnimationFrame(step); };
+        requestAnimationFrame(step);
+      });
+    };
+    if ("IntersectionObserver" in window) {
+      const io = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) { animate(); io.disconnect(); } }, { threshold: 0.3 });
+      io.observe(el);
+    } else animate();
+  })();
+
+  // ---------------- results: frozen ----------------
+  (function drawFrozen() {
+    const tot = summary.laundering;
+    $("fzTotal").textContent = FF.fmtInt(tot);
+    $("fzAlone").textContent = `${summary.frozenAloneMin}–${summary.frozenAloneMax} of ${FF.fmtInt(tot)}`;
+    $("fzTog").textContent = `${summary.frozenTogether} of ${FF.fmtInt(tot)}`;
+    $("fzLegit").textContent = FF.fmtInt(summary.legitFrozen);
+    const lo = (summary.frozenTogether / summary.frozenAloneMax - 1), hi = (summary.frozenTogether / summary.frozenAloneMin - 1);
+    $("fzLift").textContent = `+${Math.round(lo * 100)}–${Math.round(hi * 100)}%`;
+    requestAnimationFrame(() => setTimeout(() => {
+      $("fzAloneMin").style.width = (summary.frozenAloneMin / tot * 100) + "%";
+      $("fzAloneRange").style.width = (summary.frozenAloneMax / tot * 100) + "%";
+      $("fzTogBar").style.width = (summary.frozenTogether / tot * 100) + "%";
+    }, 150));
+  })();
+
+  // ---------------- replay wiring ----------------
+  const phase = $("phase"), phaseText = $("phaseText");
+  function setPhase(cls, text) { phase.className = "phase " + (cls || ""); phaseText.textContent = text; }
+  let skips = 0, currentRow = -1;
+
+  function setCurrent(i) {
+    if (currentRow >= 0) $(`row-${currentRow}`).classList.remove("current");
+    currentRow = i;
+    if (i >= 0 && i < hops.length) $(`row-${i}`).classList.add("current");
+  }
+
+  const ctl = FF.replay({
+    onEvent(ev, st) {
+      $("prog").style.width = (ctl.progress * 100).toFixed(1) + "%";
+      if (ev.type === "stats") {
+        FF.tween($("kRate"), ev.rate, FF.fmtInt);
+        FF.tween($("kScored"), ev.payments, FF.fmtInt);
+        FF.tween($("kP50"), ev.p50, FF.fmtMs);
+        FF.tween($("kP99"), ev.p99, FF.fmtMs);
+        FF.tween($("kHold"), ev.actions.hold, FF.fmtInt);
+        FF.tween($("kFreeze"), ev.actions.freeze, FF.fmtInt);
+        FF.tween($("kUp"), ev.upstream_holds, FF.fmtInt);
+        FF.tween($("kEsc"), ev.escalations, FF.fmtInt);
+        if (ev.payments > 0) { p99s.push(ev.p99); drawSpark(); }
+      } else if (ev.type === "skip") {
+        const next = Math.min(skips, hops.length - 1);
+        skips++;
+        setPhase("skip", "Fast-forwarding");
+        const txt = `Fast-forward ${ev.hours.toFixed(1)} h · ${FF.fmtInt(ev.payments)} payments loaded into the graph, not scored or shown`;
+        $("ffwd").textContent = txt;
+        moveCursor(hops[next].date.getTime() - 6 * 60e3, true);
+        feedPush(`<div class="h">${txt}</div>`, "sys", "ffwd");
+      } else if (ev.type === "live") {
+        const d = new Date(ev.hop_time.replace(" ", "T"));
+        setPhase("live", `Live · ${ev.speed}× real time`);
+        $("ffwd").textContent = `Live: the 6 minutes before the payment at ${fmtTime(d)}`;
+        moveCursor(d.getTime(), false);
+        const idx = hops.findIndex((h) => h.date.getTime() === d.getTime());
+        setCurrent(idx);
+      } else if (ev.type === "hop") {
+        const i = ev.hop, h = hops[i], p = conns[i];
+        p.style.stroke = stateVar(ev.action);
+        p.classList.add("on");
+        requestAnimationFrame(() => { p.style.strokeDashoffset = "0"; });
+        $(`hl-${i}`).style.fill = "var(--ink)";
+        const core = $(`nc-${i}`);
+        core.style.fill = stateVar(ev.action); core.style.r = "4px"; core.setAttribute("r", 4);
+        if (i === hops.length - 1) { const c = $(`nc-${hops.length}`); c.style.fill = stateVar(ev.action); c.style.r = "4px"; c.setAttribute("r", 4); }
+        $(`live-${i}`).innerHTML = `<span class="pill solid ${ev.action}">${ev.action}</span>`;
+        $(`why-${i}`).textContent = reasonText(ev, h);
+        feedPush(
+          `<div class="h"><b>Hop ${i + 1}</b> · <span style="color:${bankVar(h.fromBank)}">Bank ${h.fromBank}</span> → ` +
+          `<span style="color:${bankVar(h.toBank)}">Bank ${h.toBank}</span> · ${FF.fmtUsd(h.amount_usd)} ` +
+          `<span class="pill solid ${ev.action}" style="min-width:0;margin-left:4px">${ev.action}</span></div>` +
+          `<div class="r">${reasonText(ev, h)}</div>`, "", `${String(h.date.getHours()).padStart(2, "0")}:${String(h.date.getMinutes()).padStart(2, "0")}`);
+      } else if (ev.type === "done") {
+        setPhase("done", "Replay complete");
+        $("ffwd").textContent = `All ${hops.length} payments decided`;
+        setCurrent(-1);
+        $("btnPlay").textContent = "Replay";
+      }
+    },
+    onEnd() { $("btnPlay").textContent = "Replay"; },
+    onReset() {
+      skips = 0; setCurrent(-1); p99s.length = 0; drawSpark();
+      setPhase("", "Ready · press Play");
+      $("ffwd").textContent = "";
+      $("prog").style.width = "0%";
+      cursor.style.opacity = 0;
+      conns.forEach((p) => { p.classList.remove("on"); p.style.stroke = ""; p.style.strokeDashoffset = p.dataset.len; });
+      hops.forEach((_, i) => {
+        $(`hl-${i}`).style.fill = "";
+        $(`live-${i}`).innerHTML = `<span class="pill solid waiting">waiting</span>`;
+        $(`why-${i}`).innerHTML = `<span style="color:var(--faint)">—</span>`;
+      });
+      for (let k = 0; k <= hops.length; k++) { const c = $(`nc-${k}`); c.style.r = "0"; c.setAttribute("r", 0); c.style.fill = "var(--pending)"; }
+      ["kRate", "kScored", "kHold", "kFreeze", "kUp", "kEsc"].forEach((id) => { $(id).dataset.v = 0; $(id).textContent = "0"; });
+      ["kP50", "kP99"].forEach((id) => { delete $(id).dataset.v; $(id).textContent = "—"; });
+      feed.innerHTML = `<li class="empty-li" style="display:block;border:0;animation:none"><span class="empty">Nothing yet. Press Play to replay the chain.</span></li>`;
+    },
+  });
+
+  $("btnPlay").addEventListener("click", () => {
+    const b = $("btnPlay");
+    if (ctl.playing) { ctl.pause(); b.textContent = "Resume"; setPhase("", "Paused"); }
+    else { if (b.textContent === "Replay") ctl.reset(); ctl.play(); b.textContent = "Pause"; }
+  });
+  $("btnReset").addEventListener("click", () => { ctl.reset(); $("btnPlay").textContent = "Play"; });
+})();
+</script>
+</body>
+</html>

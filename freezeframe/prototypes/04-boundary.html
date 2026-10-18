@@ -1,0 +1,761 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FreezeFrame · Boundary</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;600;700&family=Red+Hat+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* surface */
+  --bg: #0a1322;
+  --bg-2: #0e192c;
+  --panel: rgba(17, 30, 51, 0.82);
+  --panel-solid: #111e33;
+  --line: #22344f;
+  --line-soft: #1a2a42;
+  --grid: rgba(120, 160, 220, 0.045);
+  --grid-major: rgba(120, 160, 220, 0.085);
+  --ink: #e6edf8;
+  --ink-2: #a9b6cc;
+  --muted: #6f7f9a;
+  --faint: #45556f;
+  /* decision states (never reused for banks) */
+  --release: #45d483;
+  --hold: #f3b54a;
+  --freeze: #ff6170;
+  --pending: #50607b;
+  /* banks: blue / violet / cyan / orchid / silver — distinct from state hues */
+  --bank-A: #6f9dff;
+  --bank-B: #a98bff;
+  --bank-C: #3ccfe6;
+  --bank-D: #e28df2;
+  --bank-E: #c4cee2;
+  /* comparison */
+  --alone: #7d8aa3;
+  --together: #eef3ff;
+  --enclave: #7fb2ff;
+  --font: "Red Hat Display", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "Red Hat Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(var(--grid-major) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-major) 1px, transparent 1px),
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 120px 120px, 120px 120px, 24px 24px, 24px 24px;
+  background-position: -1px -1px;
+  color: var(--ink);
+  font: 14px/1.45 var(--font);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+.mono { font-family: var(--mono); }
+
+/* ---------------- header ---------------- */
+header {
+  position: sticky; top: 0; z-index: 20;
+  display: grid; grid-template-columns: auto 1fr auto; gap: 24px; align-items: center;
+  padding: 16px 28px 14px;
+  background: linear-gradient(180deg, rgba(10, 19, 34, 0.96), rgba(10, 19, 34, 0.88));
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--line);
+}
+.brand { display: flex; align-items: baseline; gap: 14px; }
+.brand h1 { margin: 0; font-size: 19px; font-weight: 700; letter-spacing: .01em; }
+.brand .sub { color: var(--muted); font-size: 12.5px; }
+.phase {
+  display: flex; align-items: center; gap: 10px; min-width: 0;
+  font-size: 13px; color: var(--ink-2);
+}
+.phase .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); flex: none; }
+.phase[data-phase="live"] .dot { background: var(--enclave); box-shadow: 0 0 0 0 rgba(127,178,255,.6); animation: livepulse 1.8s var(--ease) infinite; }
+.phase[data-phase="skip"] .dot { background: var(--muted); }
+.phase[data-phase="done"] .dot { background: var(--release); }
+.phase .label { font-weight: 600; color: var(--ink); white-space: nowrap; }
+.phase .detail { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@keyframes livepulse { 0% { box-shadow: 0 0 0 0 rgba(127,178,255,.55); } 70% { box-shadow: 0 0 0 7px rgba(127,178,255,0); } 100% { box-shadow: 0 0 0 0 rgba(127,178,255,0); } }
+.right { display: flex; align-items: center; gap: 10px; }
+.badge {
+  font: 500 11.5px/1 var(--mono); color: var(--ink-2);
+  border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; white-space: nowrap;
+}
+.badge b { color: var(--hold); font-weight: 500; }
+button {
+  font: 600 13px/1 var(--font); color: var(--ink);
+  background: transparent; border: 1px solid var(--line); border-radius: 6px;
+  padding: 9px 14px; cursor: pointer; transition: border-color .2s var(--ease), background .2s var(--ease);
+}
+button:hover { border-color: var(--enclave); }
+button.primary { background: var(--enclave); color: #07101e; border-color: var(--enclave); min-width: 86px; }
+button.primary:hover { background: #a3c8ff; }
+button:focus-visible { outline: 2px solid var(--enclave); outline-offset: 2px; }
+.progress { position: absolute; left: 0; bottom: -1px; height: 2px; width: 100%; background: transparent; }
+.progress i { display: block; height: 100%; width: 0; background: var(--enclave); transition: width .45s var(--ease); }
+
+/* ---------------- layout ---------------- */
+main {
+  display: grid;
+  grid-template-columns: minmax(270px, 320px) minmax(0, 1fr) minmax(300px, 360px);
+  gap: 22px; padding: 22px 28px 40px; align-items: start;
+}
+.col-title {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font: 600 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
+  margin: 2px 2px 12px;
+}
+.col-title span:last-child { letter-spacing: .02em; text-transform: none; font-family: var(--font); font-weight: 500; font-size: 12px; color: var(--faint); }
+.caption { font-size: 12px; color: var(--muted); }
+.caption em { font-style: normal; color: var(--ink-2); }
+
+/* ---------------- bank cards ---------------- */
+.banks { display: flex; flex-direction: column; gap: 12px; }
+.bank {
+  position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 12px 14px 12px 16px; transition: border-color .35s var(--ease), box-shadow .35s var(--ease);
+}
+.bank::before { content: ""; position: absolute; left: 0; top: 12px; bottom: 12px; width: 3px; border-radius: 0 2px 2px 0; background: var(--bc); }
+.bank.receiving { border-color: color-mix(in srgb, var(--bc) 60%, var(--line)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--bc) 25%, transparent); }
+.bank-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.bank-name { font-weight: 700; font-size: 15px; color: var(--bc); }
+.bank-sees { font-size: 12px; color: var(--muted); }
+.slots { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; margin: 10px 0 8px; }
+.slot {
+  height: 20px; border-radius: 3px; border: 1px dashed var(--line-soft);
+  font: 500 10.5px/18px var(--mono); text-align: center; color: transparent;
+  transition: background-color .4s var(--ease), border-color .4s var(--ease), color .4s var(--ease);
+}
+.slot.own { border: 1px solid color-mix(in srgb, var(--bc) 55%, var(--line)); color: var(--ink-2); }
+.slot.recv { border-style: solid; border-color: var(--line); color: var(--muted); }
+.slot.release { background: color-mix(in srgb, var(--release) 22%, transparent); border-color: var(--release); color: var(--ink); }
+.slot.hold { background: color-mix(in srgb, var(--hold) 22%, transparent); border-color: var(--hold); color: var(--ink); }
+.slot.freeze { background: color-mix(in srgb, var(--freeze) 22%, transparent); border-color: var(--freeze); color: var(--ink); }
+.fragment { font: 400 11.5px/1.5 var(--mono); color: var(--ink-2); }
+.fragment .k { color: var(--muted); }
+.inbox { margin-top: 10px; border-top: 1px solid var(--line-soft); padding-top: 8px; }
+.inbox-title { font: 600 10.5px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--faint); margin-bottom: 6px; display: flex; justify-content: space-between; }
+.inbox-empty { font-size: 12px; color: var(--faint); }
+.msg {
+  display: grid; grid-template-columns: auto 1fr auto; gap: 4px 10px; align-items: baseline;
+  padding: 7px 0; border-bottom: 1px dashed var(--line-soft);
+  animation: msgin .42s var(--ease) both;
+}
+.msg:last-child { border-bottom: 0; }
+@keyframes msgin { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.msg .h { font: 500 11.5px var(--mono); color: var(--muted); }
+.msg .what { font-size: 12.5px; color: var(--ink); }
+.msg .why { grid-column: 1 / -1; font-size: 11.5px; color: var(--muted); }
+.msg .why b { font-weight: 500; color: var(--ink-2); }
+.pill {
+  display: inline-block; font: 600 10.5px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase;
+  padding: 4px 7px; border-radius: 3px; border: 1px solid currentColor;
+}
+.pill.release { color: var(--release); } .pill.hold { color: var(--hold); } .pill.freeze { color: var(--freeze); }
+.pill.pending { color: var(--pending); }
+.pill.solid.release { background: var(--release); color: #06140c; border-color: var(--release); }
+.pill.solid.hold { background: var(--hold); color: #1b1203; border-color: var(--hold); }
+.pill.solid.freeze { background: var(--freeze); color: #1d0306; border-color: var(--freeze); }
+
+/* ---------------- enclave ---------------- */
+.enclave-wrap { position: relative; }
+.flows { display: flex; justify-content: space-between; font: 500 11px/1 var(--mono); color: var(--muted); margin: 0 6px 8px; }
+.flows span::before { content: ""; display: inline-block; width: 18px; height: 1px; background: var(--muted); vertical-align: middle; margin-right: 8px; }
+.enclave {
+  position: relative; border-radius: 16px; padding: 30px 24px 18px;
+  background: radial-gradient(120% 90% at 50% 0%, rgba(127,178,255,.07), transparent 60%), rgba(9, 18, 33, 0.72);
+  border: 1.5px dashed rgba(127, 178, 255, .5);
+}
+.enclave-label {
+  position: absolute; top: -9px; left: 22px; padding: 0 10px; background: var(--bg);
+  font: 600 11.5px/18px var(--mono); letter-spacing: .04em; color: var(--enclave);
+}
+.enclave-label span { color: var(--muted); font-weight: 400; }
+.enclave-foot {
+  position: absolute; bottom: -9px; right: 22px; padding: 0 10px; background: var(--bg);
+  font: 500 11px/18px var(--mono); color: var(--muted);
+}
+.pipeline { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin-bottom: 18px; }
+.stage { position: relative; padding: 0 14px 0 0; }
+.stage .box {
+  border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--panel-solid);
+  transition: border-color .4s var(--ease);
+}
+.pipeline.active .stage .box { border-color: color-mix(in srgb, var(--enclave) 45%, var(--line)); }
+.stage .n { font: 500 10.5px/1 var(--mono); color: var(--enclave); }
+.stage .t { font-weight: 600; font-size: 13.5px; margin: 5px 0 3px; }
+.stage .d { font-size: 11.5px; color: var(--muted); line-height: 1.35; }
+.stage:not(:last-child)::after {
+  content: ""; position: absolute; right: 2px; top: 50%; width: 10px; height: 1px; background: var(--line);
+}
+.stage:not(:last-child)::before {
+  content: ""; position: absolute; right: 1px; top: calc(50% - 3px); border: 3px solid transparent; border-left-color: var(--muted); border-right: 0;
+}
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--line-soft); border: 1px solid var(--line-soft); border-radius: 8px; overflow: hidden; margin-bottom: 18px; }
+.kpi { background: var(--panel-solid); padding: 10px 12px 9px; }
+.kpi .v { font: 500 20px/1.15 var(--mono); color: var(--ink); font-variant-numeric: tabular-nums; }
+.kpi .v small { font-size: 12px; color: var(--muted); margin-left: 2px; }
+.kpi .k { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.kpi.hold .v { color: var(--hold); } .kpi.freeze .v { color: var(--freeze); }
+.chain-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin: 0 2px 6px; }
+.chain-head .t { font-weight: 600; font-size: 13.5px; }
+.chain-svg { width: 100%; height: auto; display: block; overflow: visible; }
+.track { fill: none; stroke: var(--line); stroke-width: 1.5; stroke-dasharray: 3 5; transition: stroke .3s var(--ease); }
+.track.pending { stroke: var(--enclave); animation: trackpulse 1.6s ease-in-out infinite; }
+@keyframes trackpulse { 50% { stroke-opacity: .35; } }
+.edge { fill: none; stroke-width: 2.25; stroke-linecap: round; transition: stroke-dashoffset .45s var(--ease); }
+.arrow { transition: opacity .3s var(--ease) .3s; }
+.node-ring { fill: var(--bg-2); stroke-width: 1.6; }
+.node-text { font: 500 12.5px var(--mono); fill: var(--ink); text-anchor: middle; dominant-baseline: central; }
+.node-bank { font: 600 11px var(--font); text-anchor: middle; }
+.edge-label { font: 500 10.5px var(--mono); fill: var(--muted); }
+.edge-label .hn { fill: var(--ink-2); }
+.hop-chip { fill: var(--bg); stroke: var(--line); stroke-width: 1; transition: stroke .3s var(--ease); }
+.hop-chip-text { font: 500 10px var(--mono); fill: var(--ink-2); text-anchor: middle; dominant-baseline: central; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 11.5px; color: var(--muted); margin: 6px 2px 0; }
+.legend i { display: inline-block; width: 14px; height: 0; border-top: 2px solid; vertical-align: middle; margin-right: 6px; }
+.legend i.dash { border-top: 1.5px dashed var(--line); }
+
+/* hop ledger under the chain */
+.ledger { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 12.5px; }
+.ledger th { text-align: left; font: 600 10.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); padding: 0 8px 8px; border-bottom: 1px solid var(--line-soft); white-space: nowrap; }
+.ledger td { padding: 7px 8px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
+.ledger tr { transition: background-color .35s var(--ease); }
+.ledger tr.current { background: rgba(127, 178, 255, .06); }
+.ledger td.num { font-family: var(--mono); color: var(--ink-2); white-space: nowrap; }
+.ledger td.why { color: var(--muted); font-size: 12px; }
+.ledger .route { font-family: var(--mono); white-space: nowrap; }
+.ledger .route b { font-family: var(--font); font-weight: 600; }
+.tablewrap { overflow-x: auto; }
+
+/* ---------------- results ---------------- */
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px 16px; margin-bottom: 14px; }
+.panel h3 { margin: 0 0 2px; font-size: 14px; font-weight: 600; }
+.panel .caption { margin-bottom: 10px; }
+.big { display: flex; align-items: baseline; gap: 10px; margin: 6px 0 2px; }
+.big .num { font: 500 30px/1 var(--mono); }
+.big .vs { color: var(--muted); font-size: 12.5px; }
+.chart { width: 100%; height: auto; display: block; overflow: visible; }
+.chart text { font-family: var(--mono); font-size: 10.5px; fill: var(--muted); }
+.chart .lbl { font-family: var(--font); font-size: 12px; font-weight: 600; }
+.chart .val { fill: var(--ink-2); }
+.draw { transition: stroke-dashoffset .45s var(--ease), opacity .45s var(--ease); }
+.legend2 { display: flex; gap: 16px; font-size: 11.5px; color: var(--muted); margin-top: 8px; }
+.legend2 .a::before, .legend2 .t::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.legend2 .a::before { border: 1.5px solid var(--alone); }
+.legend2 .t::before { background: var(--together); }
+.bench { width: 100%; border-collapse: collapse; font: 400 12px var(--mono); }
+.bench th { text-align: right; color: var(--faint); font-weight: 500; font-size: 10.5px; letter-spacing: .06em; padding: 0 0 6px; }
+.bench th:first-child, .bench td:first-child { text-align: left; }
+.bench td { text-align: right; padding: 4px 0; color: var(--ink-2); border-top: 1px solid var(--line-soft); }
+.bench td.ok { color: var(--release); } .bench td.over { color: var(--hold); }
+
+/* packet travelling enclave -> owning bank */
+.packet {
+  position: fixed; left: 0; top: 0; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 2px;
+  pointer-events: none; z-index: 50; box-shadow: 0 0 0 3px rgba(10,19,34,.9), 0 0 12px currentColor;
+  background: currentColor;
+}
+
+/* ---------------- responsive ---------------- */
+@media (max-width: 1440px) {
+  main { grid-template-columns: minmax(260px, 300px) minmax(0, 1fr); }
+  .results { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+  .results .panel { margin: 0; }
+  .results > .col-title { grid-column: 1 / -1; margin-bottom: 0; }
+}
+@media (max-width: 860px) {
+  header { grid-template-columns: 1fr; gap: 10px; padding: 14px 16px; }
+  .right { flex-wrap: wrap; }
+  main { grid-template-columns: 1fr; padding: 16px; }
+  .banks { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .pipeline, .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stage { padding: 0 8px 8px 0; }
+  .stage::after, .stage::before { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <h1>FreezeFrame</h1>
+    <span class="sub" id="sub">—</span>
+  </div>
+  <div class="phase" id="phase" data-phase="idle" aria-live="polite">
+    <span class="dot"></span><span class="label" id="phaseLabel">Ready</span><span class="detail" id="phaseDetail">Press Play to replay a recorded run.</span>
+  </div>
+  <div class="right">
+    <span class="badge">enclave: <b id="attest">—</b></span>
+    <span class="badge">scoring: <span id="tree">—</span></span>
+    <button class="primary" id="play" aria-label="Play replay">Play</button>
+    <button id="restart" aria-label="Restart replay">Restart</button>
+  </div>
+  <div class="progress"><i id="prog"></i></div>
+</header>
+
+<main>
+  <!-- what each bank can see -->
+  <section aria-labelledby="banksTitle">
+    <div class="col-title"><span id="banksTitle">Member banks</span><span>each bank sees only its fragment</span></div>
+    <div class="banks" id="banks"></div>
+  </section>
+
+  <!-- the enclave -->
+  <section class="enclave-wrap" aria-labelledby="encTitle">
+    <div class="flows"><span>sealed payments in, from each bank</span><span>decisions out, to the owner only</span></div>
+    <div class="enclave" id="enclave">
+      <div class="enclave-label" id="encTitle">Shared enclave · <span>simulated (Secure Execution in production)</span></div>
+      <div class="enclave-foot">only decisions leave the enclave</div>
+
+      <div class="pipeline" id="pipeline">
+        <div class="stage"><div class="box"><div class="n">01</div><div class="t">Pseudonymise</div><div class="d">Account numbers become keyed pseudonyms; the key stays here</div></div></div>
+        <div class="stage"><div class="box"><div class="n">02</div><div class="t">Graph patterns</div><div class="d">Fan-in/out, cycles and scatter-gather across all banks</div></div></div>
+        <div class="stage"><div class="box"><div class="n">03</div><div class="t">Score</div><div class="d">Gradient-boosted model, calibrated probability</div></div></div>
+        <div class="stage"><div class="box"><div class="n">04</div><div class="t">Decide</div><div class="d">Release, hold if expected loss &gt; $100 review cost, or freeze</div></div></div>
+      </div>
+
+      <div class="kpis" aria-label="Live enclave metrics (end to end, all stages)">
+        <div class="kpi"><div class="v" id="kRate">—</div><div class="k">payments / second</div></div>
+        <div class="kpi"><div class="v"><span id="kP50">—</span><small>ms</small></div><div class="k">p50 decision latency</div></div>
+        <div class="kpi"><div class="v"><span id="kP99">—</span><small>ms</small></div><div class="k">p99 decision latency</div></div>
+        <div class="kpi"><div class="v" id="kScored">—</div><div class="k">payments scored</div></div>
+        <div class="kpi hold"><div class="v" id="kHeld">—</div><div class="k">held for review</div></div>
+        <div class="kpi freeze"><div class="v" id="kFrozen">—</div><div class="k">freezes requested</div></div>
+        <div class="kpi"><div class="v" id="kUp">—</div><div class="k">held at the next hop</div></div>
+        <div class="kpi"><div class="v" id="kEsc">—</div><div class="k">warm-tier escalations</div></div>
+      </div>
+
+      <div class="chain-head">
+        <div class="t">The whole chain <span class="caption">— visible only inside the enclave</span></div>
+        <div class="caption mono" id="chainMeta">—</div>
+      </div>
+      <svg class="chain-svg" id="chain" viewBox="0 0 760 300" role="img" aria-label="Laundering chain, accounts in hop order"></svg>
+      <div class="legend">
+        <span><i class="dash"></i>not decided yet</span>
+        <span><i style="border-color:var(--release)"></i>released</span>
+        <span><i style="border-color:var(--hold)"></i>held for review</span>
+        <span><i style="border-color:var(--freeze)"></i>freeze requested</span>
+        <span>ring colour = the account's bank</span>
+      </div>
+
+      <div class="tablewrap">
+        <table class="ledger" aria-label="Hop by hop decisions">
+          <thead><tr><th>Hop</th><th>Data time</th><th>Route</th><th>Amount</th><th>Live decision</th><th>Why</th><th>Bank alone*</th><th>Together*</th></tr></thead>
+          <tbody id="ledger"></tbody>
+        </table>
+      </div>
+      <div class="caption" style="margin-top:8px">* From the experiment's models on the same payment (seed 0). Live decisions come from the streaming hot path plus the warm tier.</div>
+    </div>
+  </section>
+
+  <!-- results -->
+  <section class="results" aria-labelledby="resTitle">
+    <div class="col-title"><span id="resTitle">Results · test split</span><span>IBM AMLworld HI-Small</span></div>
+
+    <div class="panel">
+      <h3>Laundering payments frozen</h3>
+      <div class="caption" id="frozenCap">—</div>
+      <svg class="chart" id="frozenChart" viewBox="0 0 320 96" aria-label="Laundering payments frozen, alone versus together"></svg>
+    </div>
+
+    <div class="panel">
+      <h3>Detection quality per bank</h3>
+      <div class="caption">Minority-class F1 on the same payments each bank owns. Seed 0 bank split; "All banks" shows the range over 3 random splits.</div>
+      <svg class="chart" id="f1Chart" viewBox="0 0 320 236" aria-label="F1 alone versus together per bank"></svg>
+      <div class="legend2"><span class="a">each bank alone</span><span class="t">together in the enclave</span></div>
+    </div>
+
+    <div class="panel">
+      <h3>This chain</h3>
+      <div class="big"><span class="num" id="chainTogether">—</span><span class="vs" id="chainAlone">—</span></div>
+      <div class="caption">Experiment decisions on these 8 payments.</div>
+    </div>
+
+    <div class="panel">
+      <h3>Streaming benchmark</h3>
+      <div class="caption">Recorded run on the dev laptop (x86_64 under Rosetta), warm tier on. Budget: 50 ms p99.</div>
+      <table class="bench" id="bench"><thead><tr><th>speed</th><th>rate/s</th><th>p50</th><th>p99</th></tr></thead><tbody></tbody></table>
+    </div>
+  </section>
+</main>
+
+<script src="data.js"></script>
+<script src="sim.js"></script>
+<script>
+(function () {
+  "use strict";
+  const { D, BANKS, hops, summary, fmtUsd, fmtMs, fmtInt, tween, reduced } = window.FF;
+  const $ = (id) => document.getElementById(id);
+  const NS = "http://www.w3.org/2000/svg";
+  const svgEl = (tag, attrs = {}, parent) => {
+    const e = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+    if (parent) parent.appendChild(e);
+    return e;
+  };
+  const bankVar = (b) => `var(--bank-${b})`;
+  const stateVar = (a) => `var(--${a})`;
+  const fmtTime = (ts) => ts.slice(5, 16);
+  const N = hops.length;
+
+  // ---------- header ----------
+  $("sub").textContent = `Real ${D.chain.pattern.toLowerCase()} laundering attempt · ${N} payments · ${new Set(hops.flatMap((h) => [h.fromBank, h.toBank])).size} banks · ${D.chain.span_hours.toFixed(1)} h of data time`;
+  $("attest").textContent = D.chain.attestation;
+  $("tree").textContent = D.chain.tree_format === "zdnn_tensors" ? "IBM Z AI accelerator" : `CPU (${D.chain.tree_format})`;
+  $("chainMeta").textContent = `${D.chain.pattern} · ${N} hops · accounts in hop order`;
+
+  // ---------- bank cards: only each bank's fragment ----------
+  const bankCards = {};
+  BANKS.forEach((b) => {
+    const sent = hops.filter((h) => h.fromBank === b).map((h) => h.hop);
+    const recv = hops.filter((h) => h.toBank === b).map((h) => h.hop);
+    const seen = [...new Set([...sent, ...recv])].sort((x, y) => x - y);
+    const card = document.createElement("article");
+    card.className = "bank";
+    card.style.setProperty("--bc", bankVar(b));
+    const list = (a) => (a.length ? a.map((i) => i + 1).join(", ") : "none");
+    card.innerHTML = `
+      <div class="bank-head"><span class="bank-name">Bank ${b}</span><span class="bank-sees">sees ${seen.length} of ${N} payments</span></div>
+      <div class="slots" aria-label="Which chain payments Bank ${b} can see"></div>
+      <div class="fragment"><span class="k">sent</span> hop ${list(sent)} <span class="k">· received</span> hop ${list(recv)}</div>
+      <div class="inbox"><div class="inbox-title"><span>Inbox · its own payments</span><span class="cnt">0/${sent.length}</span></div><div class="msgs"><div class="inbox-empty">${sent.length ? "No decisions yet" : "Sends no chain payments"}</div></div></div>`;
+    const slots = card.querySelector(".slots");
+    const slotEls = [];
+    for (let i = 0; i < N; i++) {
+      const s = document.createElement("div");
+      s.className = "slot";
+      if (sent.includes(i)) { s.classList.add("own"); s.textContent = i + 1; s.title = `Hop ${i + 1}: sent by Bank ${b}`; }
+      else if (recv.includes(i)) { s.classList.add("recv"); s.textContent = i + 1; s.title = `Hop ${i + 1}: received by Bank ${b}; the decision goes to the sender`; }
+      else { s.title = `Hop ${i + 1}: not visible to Bank ${b}`; }
+      slots.appendChild(s); slotEls.push(s);
+    }
+    $("banks").appendChild(card);
+    bankCards[b] = { card, slotEls, msgs: card.querySelector(".msgs"), cnt: card.querySelector(".cnt"), sent, got: 0 };
+  });
+
+  // ---------- chain graph: accounts in hop order, folded into a loop ----------
+  const svg = $("chain");
+  const accounts = [];
+  const acctBank = {};
+  hops.forEach((h) => {
+    for (const [a, b] of [[h.from, h.fromBank], [h.to, h.toBank]]) {
+      if (!(a in acctBank)) { accounts.push(a); acctBank[a] = b; }
+    }
+  });
+  const isCycle = hops[N - 1].to === hops[0].from;
+  const pos = {};
+  const W = 760, H = 300, padX = 80;
+  if (isCycle && accounts.length >= 4) {
+    // top row left→right, bottom row right→left: the closing hop is a short edge on the left
+    const top = Math.ceil(accounts.length / 2), bot = accounts.length - top;
+    accounts.forEach((a, i) => {
+      if (i < top) pos[a] = { x: padX + (i * (W - 2 * padX)) / Math.max(1, top - 1), y: 78, row: "top" };
+      else { const j = i - top; pos[a] = { x: W - padX - (j * (W - 2 * padX)) / Math.max(1, bot - 1), y: 222, row: "bot" }; }
+    });
+  } else {
+    accounts.forEach((a, i) => { pos[a] = { x: padX + (i * (W - 2 * padX)) / Math.max(1, accounts.length - 1), y: H / 2, row: i % 2 ? "bot" : "top" }; });
+  }
+  const R = 21;
+  const gTracks = svgEl("g", {}, svg), gEdges = svgEl("g", {}, svg), gNodes = svgEl("g", {}, svg), gChips = svgEl("g", {}, svg);
+  const edges = hops.map((h) => {
+    const a = pos[h.from], b = pos[h.to];
+    let d, mid, ang, len;
+    if (h.from === h.to) {
+      // self-transfer: small loop outside the row
+      const s = a.row === "top" ? -1 : 1;
+      d = `M ${a.x - 9} ${a.y + s * 19} C ${a.x - 34} ${a.y + s * 70}, ${a.x + 34} ${a.y + s * 70}, ${a.x + 9} ${a.y + s * 19}`;
+      mid = { x: a.x, y: a.y + s * 56 }; ang = Math.PI / 2 * -s; len = 110;
+    } else {
+      const dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L;
+      const x1 = a.x + ux * (R + 4), y1 = a.y + uy * (R + 4), x2 = b.x - ux * (R + 9), y2 = b.y - uy * (R + 9);
+      d = `M ${x1} ${y1} L ${x2} ${y2}`;
+      mid = { x: (x1 + x2) / 2, y: (y1 + y2) / 2 };
+      ang = Math.atan2(dy, dx); len = Math.hypot(x2 - x1, y2 - y1);
+    }
+    const track = svgEl("path", { d, class: "track" }, gTracks);
+    const edge = svgEl("path", { d, class: "edge", stroke: "transparent" }, gEdges);
+    const L2 = edge.getTotalLength ? edge.getTotalLength() || len : len;
+    edge.style.strokeDasharray = L2; edge.style.strokeDashoffset = L2;
+    // arrow head at the end of the edge
+    let tip;
+    if (h.from === h.to) { const s = a.row === "top" ? -1 : 1; tip = { x: a.x + 9, y: a.y + s * 19 }; ang = s < 0 ? Math.PI * 0.62 : -Math.PI * 0.62; }
+    else { const dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx, dy); tip = { x: b.x - dx / L * (R + 3), y: b.y - dy / L * (R + 3) }; }
+    const ah = 7, aw = 4.2;
+    const p1 = [tip.x - Math.cos(ang) * ah + Math.sin(ang) * aw, tip.y - Math.sin(ang) * ah - Math.cos(ang) * aw];
+    const p2 = [tip.x - Math.cos(ang) * ah - Math.sin(ang) * aw, tip.y - Math.sin(ang) * ah + Math.cos(ang) * aw];
+    const arrow = svgEl("polygon", { points: `${tip.x},${tip.y} ${p1} ${p2}`, class: "arrow", fill: "var(--line)" }, gEdges);
+    // hop chip at the midpoint, nudged off the line for horizontal edges
+    const vertical = Math.abs(Math.cos(ang)) < 0.3 && h.from !== h.to;
+    const cx = mid.x, cy = mid.y;
+    const chip = svgEl("circle", { cx, cy, r: 9.5, class: "hop-chip" }, gChips);
+    const chipT = svgEl("text", { x: cx, y: cy, class: "hop-chip-text" }, gChips);
+    chipT.textContent = h.hop + 1;
+    // amount label beside the chip
+    let lx, ly, anchor;
+    if (h.from === h.to) { lx = cx; ly = cy + (a.row === "top" ? -16 : 20); anchor = "middle"; }
+    else if (vertical) { lx = cx + (a.x < W / 2 ? 16 : -16); ly = cy + 4; anchor = a.x < W / 2 ? "start" : "end"; }
+    else { lx = cx; ly = cy + (a.row === "top" ? -15 : 22); anchor = "middle"; }
+    const amt = svgEl("text", { x: lx, y: ly, class: "edge-label", "text-anchor": anchor }, gChips);
+    amt.textContent = fmtUsd(h.amount_usd);
+    return { track, edge, arrow, chip, len: L2 };
+  });
+  accounts.forEach((a) => {
+    const p = pos[a], b = acctBank[a];
+    svgEl("circle", { cx: p.x, cy: p.y, r: R, class: "node-ring", stroke: bankVar(b) }, gNodes);
+    const t = svgEl("text", { x: p.x, y: p.y, class: "node-text" }, gNodes); t.textContent = a;
+    const outward = p.row === "top" ? -1 : 1;
+    // keep bank labels clear of self-loops (self-loops sit outward too)
+    const hasLoop = hops.some((h) => h.from === a && h.to === a);
+    const ly = hasLoop ? p.y - outward * (R + 12) : p.y + outward * (R + 15);
+    const bt = svgEl("text", { x: p.x, y: ly + 4, class: "node-bank", fill: bankVar(b) }, gNodes); bt.textContent = `Bank ${b}`;
+  });
+
+  // ---------- hop ledger ----------
+  const ledgerRows = hops.map((h) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="num">${h.hop + 1}</td>
+      <td class="num">${fmtTime(h.ts)}</td>
+      <td class="route"><b style="color:${bankVar(h.fromBank)}">${h.fromBank}</b> ${h.from} → <b style="color:${bankVar(h.toBank)}">${h.toBank}</b> ${h.to}</td>
+      <td class="num">${fmtUsd(h.amount_usd)}</td>
+      <td class="live"><span class="pill pending">waiting</span></td>
+      <td class="why">—</td>
+      <td>${h.aloneAction ? `<span class="pill ${h.aloneAction}">${h.aloneAction}</span>` : "—"}</td>
+      <td>${h.togetherAction ? `<span class="pill ${h.togetherAction}">${h.togetherAction}</span>` : "—"}</td>`;
+    $("ledger").appendChild(tr);
+    return tr;
+  });
+
+  function reasonText(ev, h) {
+    if (ev.reason === "upstream_flag") return "Money came from an already-flagged payment — held at the next hop";
+    const loss = ev.p * h.amount_usd;
+    if (ev.action === "freeze") return `Model p = ${ev.p.toFixed(3)} clears the 95%-precision freeze threshold`;
+    if (ev.action === "hold") return `Model p = ${ev.p.toFixed(3)} × ${fmtUsd(h.amount_usd)} ≈ ${fmtUsd(loss)} expected loss > $100 review cost`;
+    return `Model p = ${ev.p.toFixed(3)}: expected loss below the $100 review cost`;
+  }
+  const reasonShort = (ev) => ev.reason === "upstream_flag" ? "came from a flagged payment" : `model · p = ${ev.p.toFixed(3)}`;
+
+  // ---------- results: frozen bars ----------
+  (function frozenChart() {
+    const s = $("frozenChart"), total = summary.laundering, x0 = 0, x1 = 300;
+    const sx = (v) => x0 + (v / total) * (x1 - x0);
+    $("frozenCap").textContent = `Of ${fmtInt(total)} laundering payments in the test split. Legitimate payments frozen, together: ${summary.legitFrozen}.`;
+    const rows = [
+      { y: 14, label: "Each bank alone", lo: summary.frozenAloneMin, hi: summary.frozenAloneMax, color: "var(--alone)", text: `${summary.frozenAloneMin}–${summary.frozenAloneMax}` },
+      { y: 60, label: "Together", lo: summary.frozenTogether, hi: summary.frozenTogether, color: "var(--together)", text: fmtInt(summary.frozenTogether) },
+    ];
+    rows.forEach((r, i) => {
+      svgEl("text", { x: 0, y: r.y, class: "lbl", fill: "var(--ink-2)" }, s).textContent = r.label;
+      svgEl("rect", { x: x0, y: r.y + 7, width: x1 - x0, height: 10, rx: 2, fill: "var(--line-soft)" }, s);
+      const bar = svgEl("rect", { x: x0, y: r.y + 7, width: 0, height: 10, rx: 2, fill: r.color, class: "draw" }, s);
+      bar.style.transition = "width .45s cubic-bezier(.2,.7,.2,1)";
+      if (r.lo !== r.hi) { // range: solid to min, lighter band to max
+        const band = svgEl("rect", { x: sx(r.lo), y: r.y + 7, width: 0, height: 10, fill: r.color, opacity: .4 }, s);
+        band.style.transition = "width .45s cubic-bezier(.2,.7,.2,1) .2s";
+        requestAnimationFrame(() => setTimeout(() => band.setAttribute("width", sx(r.hi) - sx(r.lo)), 120 + i * 120));
+      }
+      requestAnimationFrame(() => setTimeout(() => bar.setAttribute("width", sx(r.lo) - x0), 60 + i * 120));
+      const t = svgEl("text", { x: x1 + 0, y: r.y, "text-anchor": "end", class: "val" }, s);
+      t.textContent = r.text;
+    });
+  })();
+
+  // ---------- results: F1 dumbbells ----------
+  (function f1Chart() {
+    const s = $("f1Chart");
+    const lo = 0.3, hi = 0.8, x0 = 62, x1 = 300, sx = (v) => x0 + ((v - lo) / (hi - lo)) * (x1 - x0);
+    const members = D.results.members.slice().sort((a, b) => a.member - b.member);
+    const rows = members.map((m) => ({ label: `Bank ${BANKS[m.member]}`, color: bankVar(BANKS[m.member]), a: m.alone, t: m.together }));
+    rows.push({ label: "All banks", color: "var(--ink)", a: summary.aloneF1Mean, t: summary.togetherF1, range: [summary.aloneF1Min, summary.aloneF1Max] });
+    const top = 18, step = 32;
+    for (let v = lo; v <= hi + 1e-9; v += 0.1) {
+      const x = sx(v);
+      svgEl("line", { x1: x, x2: x, y1: top - 10, y2: top + step * (rows.length - 1) + 12, stroke: "var(--line-soft)" }, s);
+      svgEl("text", { x, y: top + step * (rows.length - 1) + 26, "text-anchor": "middle" }, s).textContent = v.toFixed(1);
+    }
+    rows.forEach((r, i) => {
+      const y = top + i * step;
+      if (i === rows.length - 1) svgEl("line", { x1: 0, x2: x1, y1: y - step / 2, y2: y - step / 2, stroke: "var(--line)" }, s);
+      svgEl("text", { x: 0, y: y + 4, class: "lbl", fill: r.color }, s).textContent = r.label;
+      if (r.range) svgEl("line", { x1: sx(r.range[0]), x2: sx(r.range[1]), y1: y, y2: y, stroke: "var(--alone)", "stroke-width": 6, "stroke-linecap": "round", opacity: .35 }, s);
+      const seg = svgEl("line", { x1: sx(r.a), x2: sx(r.a), y1: y, y2: y, stroke: "var(--alone)", "stroke-width": 1.5, class: "draw" }, s);
+      seg.style.transition = "all .45s cubic-bezier(.2,.7,.2,1)";
+      svgEl("circle", { cx: sx(r.a), cy: y, r: 4.5, fill: "var(--bg)", stroke: "var(--alone)", "stroke-width": 1.5 }, s);
+      const dot = svgEl("circle", { cx: sx(r.a), cy: y, r: 5, fill: "var(--together)" }, s);
+      dot.style.transition = "cx .45s cubic-bezier(.2,.7,.2,1)";
+      const val = svgEl("text", { x: sx(r.t) + 9, y: y + 4, class: "val", opacity: 0 }, s);
+      val.textContent = r.t.toFixed(3);
+      val.style.transition = "opacity .3s ease .35s";
+      const aval = svgEl("text", { x: sx(r.a) - 9, y: y + 4, "text-anchor": "end", opacity: 0 }, s);
+      aval.textContent = r.a.toFixed(3);
+      aval.style.transition = "opacity .3s ease .35s";
+      setTimeout(() => {
+        seg.setAttribute("x2", sx(r.t)); dot.setAttribute("cx", sx(r.t));
+        val.setAttribute("opacity", 1); aval.setAttribute("opacity", 1);
+      }, reduced ? 0 : 200 + i * 70);
+    });
+  })();
+
+  // ---------- results: this chain + benchmark ----------
+  const togetherStopped = hops.filter((h) => h.togetherAction && h.togetherAction !== "release").length;
+  $("chainTogether").textContent = `${togetherStopped} of ${N}`;
+  $("chainAlone").innerHTML = `stopped together · each bank alone would release <b style="color:var(--release);font-weight:600">${summary.aloneMissed}</b> of them`;
+  const bench = $("bench").querySelector("tbody");
+  D.latency.forEach((r) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${r.speed}×</td><td>${fmtInt(r.rate)}</td><td>${r.p50.toFixed(1)}</td><td class="${r.p99 <= 50 ? "ok" : "over"}">${r.p99 >= 100 ? Math.round(r.p99) : r.p99.toFixed(1)}</td>`;
+    bench.appendChild(tr);
+  });
+
+  // ---------- live state ----------
+  function setPhase(kind, label, detail) {
+    $("phase").dataset.phase = kind;
+    $("phaseLabel").textContent = label;
+    $("phaseDetail").textContent = detail;
+    $("pipeline").classList.toggle("active", kind === "live");
+  }
+  let currentHop = -1;
+  function markCurrent(i) {
+    currentHop = i;
+    ledgerRows.forEach((tr, k) => tr.classList.toggle("current", k === i));
+    edges.forEach((e, k) => { if (!e.decided) e.track.classList.toggle("pending", k === i); });
+  }
+  function hopForTime(t) {
+    const exact = hops.findIndex((h) => h.ts === t || h.ts.slice(0, 16) === String(t).slice(0, 16));
+    if (exact >= 0) return exact;
+    const target = new Date(String(t).replace(" ", "T")).getTime();
+    let best = 0, bd = Infinity;
+    hops.forEach((h, k) => { const d = Math.abs(h.date.getTime() - target); if (d < bd) { bd = d; best = k; } });
+    return best;
+  }
+
+  function sendPacket(fromEl, toCard, action, done) {
+    if (reduced) { done(); return; }
+    const a = fromEl.getBoundingClientRect(), b = toCard.getBoundingClientRect();
+    const p = document.createElement("div");
+    p.className = "packet";
+    p.style.color = getComputedStyle(document.documentElement).getPropertyValue(`--${action}`).trim() || "#fff";
+    document.body.appendChild(p);
+    const sx = a.left + a.width / 2, sy = a.top + a.height / 2;
+    const tx = b.right - 18, ty = b.top + 18;
+    const anim = p.animate([
+      { transform: `translate(${sx}px, ${sy}px) scale(.6)`, opacity: 0 },
+      { transform: `translate(${sx}px, ${sy}px) scale(1)`, opacity: 1, offset: .12 },
+      { transform: `translate(${tx}px, ${ty}px) scale(1)`, opacity: 1, offset: .88 },
+      { transform: `translate(${tx}px, ${ty}px) scale(.4)`, opacity: 0 },
+    ], { duration: 520, easing: "cubic-bezier(.2,.7,.2,1)" });
+    anim.onfinish = () => { p.remove(); done(); };
+    toCard.classList.add("receiving");
+    setTimeout(() => toCard.classList.remove("receiving"), 900);
+  }
+
+  function onHop(ev) {
+    const i = ev.hop, h = hops[i], e = edges[i];
+    e.decided = true;
+    e.track.classList.remove("pending");
+    e.edge.setAttribute("stroke", stateVar(ev.action));
+    requestAnimationFrame(() => { e.edge.style.strokeDashoffset = 0; });
+    e.arrow.setAttribute("fill", stateVar(ev.action));
+    e.chip.setAttribute("stroke", stateVar(ev.action));
+    const row = ledgerRows[i];
+    row.querySelector(".live").innerHTML = `<span class="pill solid ${ev.action}">${ev.action}</span>`;
+    row.querySelector(".why").textContent = reasonShort(ev);
+    row.querySelector(".why").title = reasonText(ev, h);
+
+    // decision leaves the enclave towards the owning bank only
+    const owner = BANKS[ev.member] ?? h.fromBank;
+    const card = bankCards[owner];
+    sendPacket(e.chip, card.card, ev.action, () => {
+      const slot = card.slotEls[i];
+      slot.classList.remove("release", "hold", "freeze");
+      slot.classList.add(ev.action);
+      const empty = card.msgs.querySelector(".inbox-empty");
+      if (empty) empty.remove();
+      const m = document.createElement("div");
+      m.className = "msg";
+      const alone = h.aloneAction ? `<b style="color:${stateVar(h.aloneAction)}">${h.aloneAction}</b>` : "—";
+      m.innerHTML = `<span class="h">hop ${i + 1}</span><span class="what">${h.from} → ${h.to} · ${fmtUsd(h.amount_usd)}</span><span class="pill solid ${ev.action}">${ev.action}</span>
+        <span class="why">${reasonText(ev, h)}. This bank's own model, alone: ${alone}.</span>`;
+      card.msgs.prepend(m);
+      card.got++;
+      card.cnt.textContent = `${card.got}/${card.sent.length}`;
+    });
+  }
+
+  function onStats(s) {
+    tween($("kRate"), s.rate, (v) => fmtInt(v));
+    tween($("kP50"), s.p50, (v) => v.toFixed(1), 400);
+    tween($("kP99"), s.p99, (v) => v.toFixed(1), 400);
+    tween($("kScored"), s.payments);
+    tween($("kHeld"), s.actions.hold);
+    tween($("kFrozen"), s.actions.freeze);
+    tween($("kUp"), s.upstream_holds);
+    tween($("kEsc"), s.escalations);
+  }
+
+  function resetView() {
+    ["kRate", "kP50", "kP99", "kScored", "kHeld", "kFrozen", "kUp", "kEsc"].forEach((k) => { const el = $(k); el.textContent = "—"; delete el.dataset.v; });
+    edges.forEach((e) => {
+      e.decided = false; e.track.classList.remove("pending");
+      e.edge.style.transition = "none"; e.edge.style.strokeDashoffset = e.len; e.edge.setAttribute("stroke", "transparent");
+      void e.edge.getBoundingClientRect(); e.edge.style.transition = "";
+      e.arrow.setAttribute("fill", "var(--line)"); e.chip.setAttribute("stroke", "var(--line)");
+    });
+    ledgerRows.forEach((tr) => { tr.classList.remove("current"); tr.querySelector(".live").innerHTML = '<span class="pill pending">waiting</span>'; tr.querySelector(".why").textContent = "—"; tr.querySelector(".why").title = ""; });
+    Object.values(bankCards).forEach((c) => {
+      c.got = 0; c.cnt.textContent = `0/${c.sent.length}`;
+      c.msgs.innerHTML = `<div class="inbox-empty">${c.sent.length ? "No decisions yet" : "Sends no chain payments"}</div>`;
+      c.slotEls.forEach((s) => s.classList.remove("release", "hold", "freeze"));
+    });
+    setPhase("idle", "Ready", "Press Play to replay a recorded run.");
+    $("prog").style.width = "0%";
+    currentHop = -1;
+  }
+
+  const ctl = FF.replay({
+    onEvent(ev, state) {
+      $("prog").style.width = `${(ctl.progress * 100).toFixed(1)}%`;
+      if (ev.type === "stats") onStats(ev);
+      else if (ev.type === "skip") {
+        setPhase("skip", "Fast-forward", `${ev.hours.toFixed(1)} h of traffic (${fmtInt(ev.payments)} payments) loaded into the graph — not scored, not shown`);
+      } else if (ev.type === "live") {
+        const i = hopForTime(ev.hop_time);
+        markCurrent(i);
+        setPhase("live", `Live · ${ev.speed}× real time`, `the minutes before hop ${i + 1} (${fmtTime(ev.hop_time)})`);
+      } else if (ev.type === "hop") onHop(ev);
+      else if (ev.type === "done") {
+        markCurrent(-1);
+        setPhase("done", "Replay complete", `${Object.keys(state.hops).length} of ${N} chain payments decided live`);
+        $("play").textContent = "Replay";
+      }
+    },
+    onReset: resetView,
+    onEnd() { $("play").textContent = "Replay"; },
+  });
+
+  const playBtn = $("play");
+  function toggle() {
+    if (ctl.playing) { ctl.pause(); playBtn.textContent = "Play"; playBtn.setAttribute("aria-label", "Play replay"); }
+    else {
+      ctl.play(); playBtn.textContent = "Pause"; playBtn.setAttribute("aria-label", "Pause replay");
+    }
+  }
+  playBtn.addEventListener("click", toggle);
+  $("restart").addEventListener("click", () => { ctl.reset(); playBtn.textContent = "Play"; });
+  document.addEventListener("keydown", (e) => {
+    if (e.code === "Space" && e.target === document.body) { e.preventDefault(); toggle(); }
+  });
+  resetView();
+})();
+</script>
+</body>
+</html>
